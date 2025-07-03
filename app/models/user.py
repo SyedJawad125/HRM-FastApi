@@ -18,5 +18,4 @@ class User(Base):
     is_admin = Column(Boolean, server_default='FALSE', nullable=False)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, default=datetime.utcnow)
 
-    # 👇 Add this line
     created_departments = relationship("Department", back_populates="creator")
