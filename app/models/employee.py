@@ -17,3 +17,4 @@ class Employee(Base):
     department_id = Column(Integer, ForeignKey("departments.id"))
     
     department = relationship("Department", back_populates="employees")
+    

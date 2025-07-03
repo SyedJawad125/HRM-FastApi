@@ -6,6 +6,8 @@ from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.sql import func
 from datetime import datetime
 
+from sqlalchemy.orm import relationship
+
 class User(Base):
     __tablename__ = "users"
 
@@ -14,5 +16,7 @@ class User(Base):
     password = Column(String, nullable=False)
     is_active = Column(Boolean, server_default='TRUE', nullable=False)
     is_admin = Column(Boolean, server_default='FALSE', nullable=False)
-    # created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, default=datetime.utcnow)
+
+    # 👇 Add this line
+    created_departments = relationship("Department", back_populates="creator")

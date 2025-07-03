@@ -18,3 +18,19 @@ __all__ = [
     'Employee', 'EmployeeCreate',
     'Department', 'DepartmentCreate'
 ]
+
+from .department import (
+    DepartmentBase,
+    DepartmentCreate,
+    Department,
+    PaginatedDepartments,
+    DepartmentListResponse
+)
+
+__all__ = [
+    'DepartmentBase',
+    'DepartmentCreate',
+    'Department',
+    'PaginatedDepartments',
+    'DepartmentListResponse'
+]

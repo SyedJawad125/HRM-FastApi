@@ -3,6 +3,9 @@ from sqlalchemy.orm import Session
 from typing import List, Optional, Any
 from .. import database, schemas, models, oauth2
 from app.utils import paginate_data, create_response, filter_departments
+from fastapi.responses import JSONResponse
+# from app.schemas import DepartmentListResponse
+
 
 router = APIRouter(
     prefix="/departments",
@@ -11,55 +14,73 @@ router = APIRouter(
 
 # @router.get("/", response_model=List[schemas.Department])
 
-@router.get("/", response_model=Any)
+# @router.get("/", response_model=Any)
+@router.get("/", response_model=schemas.DepartmentListResponse)
 def get_departments(
     request: Request,
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(oauth2.get_current_user),
 ):
     try:
-        # Step 1: Get all departments
         query = db.query(models.Department)
-
-        # Step 2: Apply filters from query params (if needed)
-        query = filter_departments(request.query_params, query)  # You need to write this helper
-
-        # Step 3: Get filtered results
+        query = filter_departments(request.query_params, query)
         data = query.all()
-
-        # Step 4: Apply pagination
         paginated_data, count = paginate_data(data, request)
 
-        # Step 5: Serialize the paginated data
-        serialized_data = [schemas.Department.from_orm(dept).dict() for dept in paginated_data]
+        # ✅ Convert ORM to Pydantic
+        serialized_data = [schemas.Department.from_orm(dept) for dept in paginated_data]
 
-        # Step 6: Build the response
         response_data = {
             "count": count,
-            "data": serialized_data,
+            "data": serialized_data
         }
-        # return create_response(response_data, "SUCCESSFUL", 200)
+
         return {
-                "status": "SUCCESSFUL",
-                "result": response_data
-            }
+            "status": "SUCCESSFUL",
+            "result": response_data
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Department)
-def create_department(department: schemas.DepartmentCreate, db: Session = Depends(database.get_db), 
-                     current_user: models.User = Depends(oauth2.get_current_user)):
-    if not current_user.is_admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, 
-                           detail="Only admin users can create departments")
-    
-    new_department = models.Department(**department.dict())
-    db.add(new_department)
-    db.commit()
-    db.refresh(new_department)
-    return new_department
+# @router.post("/", status_code=status.HTTP_201_CREATED)
+def create_department(
+    department: schemas.DepartmentCreate,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(oauth2.get_current_user)
+) -> Any:
+    try:
+        if not current_user.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only admin users can create departments"
+            )
+
+        department_data = department.dict()
+        department_data["created_by_user_id"] = current_user.id  # ✅ Correct field name
+
+        new_department = models.Department(**department_data)
+        db.add(new_department)
+        db.commit()
+        db.refresh(new_department)
+
+        # return {
+        #     "status": "SUCCESSFUL",
+        #     "data": schemas.Department.from_orm(new_department).dict(),
+        #     "message": "Department created successfully"
+        # }
+        return new_department
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 
 @router.get("/{id}", response_model=schemas.Department)
 def get_department(id: int, db: Session = Depends(database.get_db), 
