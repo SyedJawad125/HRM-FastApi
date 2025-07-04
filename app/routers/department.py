@@ -91,24 +91,46 @@ def get_department(id: int, db: Session = Depends(database.get_db),
                            detail=f"Department with id {id} not found")
     return department
 
-@router.put("/{id}", response_model=schemas.Department)
-def update_department(id: int, updated_department: schemas.DepartmentCreate, 
-                     db: Session = Depends(database.get_db), 
-                     current_user: models.User = Depends(oauth2.get_current_user)):
-    if not current_user.is_admin:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, 
-                           detail="Only admin users can update departments")
-    
-    department_query = db.query(models.Department).filter(models.Department.id == id)
-    department = department_query.first()
-    
-    if not department:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-                           detail=f"Department with id {id} not found")
-    
-    department_query.update(updated_department.dict(), synchronize_session=False)
-    db.commit()
-    return department_query.first()
+@router.patch("/{id}", response_model=schemas.Department)
+def patch_update_department(
+    id: int,
+    updated_department: schemas.DepartmentUpdate,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(oauth2.get_current_user)
+):
+    try:
+        if not current_user.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only admin users can update departments"
+            )
+
+        department_instance = db.query(models.Department).filter(models.Department.id == id).first()
+
+        if not department_instance:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Department with id {id} not found"
+            )
+
+        update_data = updated_department.dict(exclude_unset=True)
+
+        for key, value in update_data.items():
+            setattr(department_instance, key, value)
+
+        db.commit()
+        db.refresh(department_instance)
+
+        return department_instance
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred while patching the department: {str(e)}"
+        )
+
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_department(id: int, db: Session = Depends(database.get_db), 

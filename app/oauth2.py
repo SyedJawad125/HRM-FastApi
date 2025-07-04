@@ -147,7 +147,30 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 # Function to get the current user based on the JWT token
+# def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
+#     credentials_exception = HTTPException(
+#         status_code=status.HTTP_401_UNAUTHORIZED,
+#         detail="Could not validate credentials",
+#         headers={"WWW-Authenticate": "Bearer"},
+#     )
+
+#     try:
+#         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+#         user_id: int = payload.get("user_id")
+#         if user_id is None:
+#             raise credentials_exception
+#     except JWTError:
+#         raise credentials_exception
+
+#     user = db.query(models.User).filter(models.User.id == user_id).first()
+#     if user is None:
+#         raise credentials_exception
+#     return user
+
+
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(database.get_db)):
+    print("🔐 get_current_user called")  # Check if function is entered
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -155,14 +178,22 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     )
 
     try:
+        print("🔍 Decoding token:", token)
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print("✅ Token decoded:", payload)
         user_id: int = payload.get("user_id")
         if user_id is None:
+            print("⚠️ user_id missing from payload")
             raise credentials_exception
-    except JWTError:
+    except JWTError as e:
+        print("❌ JWT Error:", str(e))
         raise credentials_exception
 
+    print("🧠 Fetching user from DB...")
     user = db.query(models.User).filter(models.User.id == user_id).first()
+    print("👤 Fetched user:", user)
+
     if user is None:
         raise credentials_exception
+
     return user

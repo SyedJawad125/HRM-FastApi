@@ -24,7 +24,8 @@ from .department import (
     DepartmentCreate,
     Department,
     PaginatedDepartments,
-    DepartmentListResponse
+    DepartmentListResponse,
+    DepartmentUpdate
 )
 
 __all__ = [
@@ -32,5 +33,6 @@ __all__ = [
     'DepartmentCreate',
     'Department',
     'PaginatedDepartments',
-    'DepartmentListResponse'
+    'DepartmentListResponse',
+    'DepartmentUpdate'
 ]

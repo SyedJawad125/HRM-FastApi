@@ -45,3 +45,12 @@ class PaginatedDepartments(BaseModel):
 class DepartmentListResponse(BaseModel):
     status: str
     result: PaginatedDepartments
+
+# schemas/department.py
+
+class DepartmentUpdate(BaseModel):
+    name: Optional[str] = None
+    location: Optional[str] = None
+
+    class Config:
+        extra = "forbid"
