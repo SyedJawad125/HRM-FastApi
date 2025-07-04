@@ -13,7 +13,7 @@ def verify_password(plain_password: str, hashed_password: str):
 def paginate_data(data, request):
     try:
         page = int(request.query_params.get("page", 1))
-        page_size = int(request.query_params.get("page_size", 15))
+        page_size = int(request.query_params.get("page_size", 20))
         start = (page - 1) * page_size
         end = start + page_size
         return data[start:end], len(data)
