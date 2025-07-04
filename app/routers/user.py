@@ -3,15 +3,8 @@ from sqlalchemy.orm import Session
 from .. import database, schemas, models, utils, oauth2
 from typing import List
 from app.schemas.user import UserOut
-
 from ..schemas import LoginRequest, Token
-
-from fastapi import APIRouter, Depends, status, HTTPException
-from sqlalchemy.orm import Session
 from .. import database, models, utils, oauth2
-from ..schemas import LoginRequest, Token
-
-
 from fastapi.security import OAuth2PasswordRequestForm
 from ..database import get_db
 
