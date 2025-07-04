@@ -38,7 +38,9 @@ class EmployeeBase(BaseModel):
     department_id: int
 
 class EmployeeCreate(EmployeeBase):
-    pass
+   class Config:
+        extra = "forbid"
+
 
 class Employee(EmployeeBase):
     id: int
@@ -54,3 +56,18 @@ class PaginatedEmployees(BaseModel):
 class EmployeeListResponse(BaseModel):
     status: str
     result: PaginatedEmployees
+
+class EmployeeUpdate(BaseModel):
+    name: Optional[str] = None
+    location: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone_number: Optional[str] = None
+    hire_date: Optional[date] = None
+    job_title: Optional[str] = None
+    salary: Optional[float] = None
+    department_id: Optional[int] = None
+
+    class Config:
+        extra = "forbid"
