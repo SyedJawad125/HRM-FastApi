@@ -54,7 +54,9 @@ from .user import (
 # employee schemas
 from .employee import (
     Employee,
-    EmployeeCreate
+    EmployeeCreate,
+    PaginatedEmployees,
+    EmployeeListResponse
 )
 
 # department schemas
@@ -71,7 +73,8 @@ from .department import (
 __all__ = [
     'UserBase', 'UserCreate', 'LoginRequest', 'UserUpdate', 'UserOut',
     'Token', 'TokenData',
-    'Employee', 'EmployeeCreate',
+    'Employee', 'EmployeeCreate','PaginatedEmployees','EmployeeListResponse',
     'DepartmentBase', 'DepartmentCreate', 'Department', 'DepartmentUpdate',
     'PaginatedDepartments', 'DepartmentListResponse'
+
 ]

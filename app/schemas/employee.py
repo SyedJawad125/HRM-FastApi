@@ -25,7 +25,7 @@
 
 from pydantic import BaseModel, EmailStr
 from datetime import date
-from typing import Optional
+from typing import List, Optional
 
 class EmployeeBase(BaseModel):
     first_name: str
@@ -45,3 +45,12 @@ class Employee(EmployeeBase):
     
     class Config:
         from_attributes = True  # Previously called orm_mode in Pydantic v1
+
+class PaginatedEmployees(BaseModel):
+    count: int
+    data: List[Employee]
+
+# ✅ Add this for final API response
+class EmployeeListResponse(BaseModel):
+    status: str
+    result: PaginatedEmployees

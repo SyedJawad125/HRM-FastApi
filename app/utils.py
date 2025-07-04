@@ -39,3 +39,12 @@ def create_response(data, message, status_code):
             "result": data
         }
     )
+
+def filter_employees(params, query):
+    name = params.get("name")
+    if name:
+        query = query.filter(models.Employee.name.ilike(f"%{name}%"))
+    # Add more filters as needed
+    return query
+
+from fastapi.responses import JSONResponse
