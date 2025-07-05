@@ -26,7 +26,7 @@ async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
         )
     
     # Hash the password
-    hashed_password = utils.get_password_hash(user.password)
+    hashed_password = utils.get_password_hash(user.hashed_password)
     
     # Create new user
     new_user = models.User(
@@ -58,7 +58,7 @@ def login(user_credentials: LoginRequest, db: Session = Depends(database.get_db)
         )
 
     # Check password
-    if not utils.verify_password(user_credentials.password, user.password):
+    if not utils.verify_password(user_credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials"
         )
