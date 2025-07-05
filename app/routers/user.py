@@ -8,6 +8,10 @@ from .. import database, models, utils, oauth2
 from fastapi.security import OAuth2PasswordRequestForm
 from ..database import get_db
 
+
+from app import models, schemas, utils, oauth2, database
+
+
 router = APIRouter(
     prefix="/users",
     tags=['Users']
@@ -45,28 +49,42 @@ async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     return {"access_token": access_token, "token_type": "bearer"}
 
 
+
+# @router.post("/login", response_model=Token)
+
 # router = APIRouter(tags=["Authentication"])
 
-@router.post("/login", response_model=Token)
-def login(user_credentials: LoginRequest, db: Session = Depends(database.get_db)):
-    # Lookup user by email
+@router.post("/login")
+def login(user_credentials: schemas.LoginRequest, db: Session = Depends(database.get_db)):
     user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
 
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials"
-        )
+    if not user or not utils.verify_password(user_credentials.password, user.hashed_password):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials")
 
-    # Check password
-    if not utils.verify_password(user_credentials.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials"
-        )
-
-    # Create JWT token
     access_token = oauth2.create_access_token(data={"user_id": user.id})
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    # 🔐 Collect permissions
+    permission_names = set()
+
+    if user.is_superuser:
+        # Superuser: get all permissions
+        permissions = db.query(models.Permission).all()
+        permission_names = {p.name for p in permissions}
+    else:
+        # Regular user: get permissions from roles
+        for role in user.roles:
+            for permission in role.permissions:
+                permission_names.add(permission.name)
+
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user_id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "permissions": list(permission_names),
+    }
+
 
 
 @router.get("/{id}", response_model=schemas.UserOut)

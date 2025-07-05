@@ -46,19 +46,25 @@ def get_roles(
 
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Role)
-# @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_role(
     role: schemas.RoleCreate,
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(oauth2.get_current_user)
 ) -> Any:
     try:
-        
+        # Extract permission IDs and remove them from role_data
+        permission_ids = role.permission_ids or []
+        role_data = role.dict(exclude={"permission_ids"})
+        role_data["created_by_user_id"] = current_user.id
 
-        role_data = role.dict()
-        role_data["created_by_user_id"] = current_user.id  # ✅ Correct field name
-
+        # Create Role instance
         new_role = models.Role(**role_data)
+
+        # Fetch Permission instances and assign to role
+        if permission_ids:
+            permissions = db.query(models.Permission).filter(models.Permission.id.in_(permission_ids)).all()
+            new_role.permissions = permissions
+
         db.add(new_role)
         db.commit()
         db.refresh(new_role)
@@ -69,6 +75,7 @@ def create_role(
         raise he
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 
