@@ -10,6 +10,22 @@ role_permission = Table(
     Column('permission_id', Integer, ForeignKey('permissions.id'))
 )
 
+# class Role(Base):
+#     __tablename__ = 'roles'
+
+#     id = Column(Integer, primary_key=True, index=True)
+#     name = Column(String(50), nullable=False)
+#     description = Column(Text, nullable=False)
+#     code = Column(String(50), nullable=True)
+
+#     created_by_user_id = Column(Integer, ForeignKey("users.id"))
+#     creator = relationship("User", back_populates="created_roles")
+
+#     users = relationship("User", back_populates="role")
+    
+#     permissions = relationship("Permission", secondary="role_permission", back_populates="roles")
+
+
 class Role(Base):
     __tablename__ = 'roles'
 
@@ -19,6 +35,11 @@ class Role(Base):
     code = Column(String(50), nullable=True)
 
     created_by_user_id = Column(Integer, ForeignKey("users.id"))
-    creator = relationship("User", back_populates="created_roles")
+
+    # Specify foreign key
+    creator = relationship("User", back_populates="created_roles", foreign_keys=[created_by_user_id])
+
+    # Disambiguate from other user relationship
+    users = relationship("User", back_populates="role", foreign_keys="[User.role_id]")
 
     permissions = relationship("Permission", secondary="role_permission", back_populates="roles")

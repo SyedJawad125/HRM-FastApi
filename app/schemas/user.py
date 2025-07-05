@@ -5,8 +5,16 @@ from typing import Optional
 class UserBase(BaseModel):
     email: EmailStr
 
-class UserCreate(UserBase):
+# class UserCreate(UserBase):
+#     password: str
+#     role_id: int
+
+class UserCreate(BaseModel):
+    username: Optional[str] = None
+    email: EmailStr
     password: str
+    role_id: int
+
 
 # class UserLogin(BaseModel):  # This was missing
 #     email: EmailStr
