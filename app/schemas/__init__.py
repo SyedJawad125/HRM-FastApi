@@ -28,12 +28,31 @@ from .department import (
     DepartmentListResponse
 )
 
+from .permission import (
+    PermissionBase,
+    PermissionCreate,
+    PermissionUpdate,
+    Permission,
+    PaginatedPermissions,
+    PermissionListResponse
+)
+from .role import (
+    RoleBase,
+    RoleCreate,
+    RoleUpdate,
+    Role,
+    PaginatedRoles,
+    RoleListResponse
+)
+
 # define what will be exported on `from schemas import *`
 __all__ = [
     'UserBase', 'UserCreate', 'LoginRequest', 'UserUpdate', 'UserOut',
     'Token', 'TokenData',
     'Employee', 'EmployeeCreate','PaginatedEmployees','EmployeeListResponse','EmployeeUpdate',
     'DepartmentBase', 'DepartmentCreate', 'Department', 'DepartmentUpdate',
-    'PaginatedDepartments', 'DepartmentListResponse'
+    'PaginatedDepartments', 'DepartmentListResponse',
+    'PermissionBase', 'PermissionCreate' ,'PermissionUpdate','Permission', 'PaginatedPermissions', 'PermissionListResponse',
+    'RoleBase', 'RoleCreate', 'RoleUpdate', 'Role', 'PaginatedRoles', 'RoleListResponse',
 
 ]

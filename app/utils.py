@@ -20,6 +20,15 @@ def paginate_data(data, request):
     except:
         return data, len(data)
     
+from fastapi.responses import JSONResponse
+def create_response(data, message, status_code):
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "status": message,
+            "result": data
+        }
+    )
 from app import models
 
 def filter_departments(params, query):
@@ -31,19 +40,29 @@ def filter_departments(params, query):
 
 from fastapi.responses import JSONResponse
 
-def create_response(data, message, status_code):
-    return JSONResponse(
-        status_code=status_code,
-        content={
-            "status": message,
-            "result": data
-        }
-    )
 
 def filter_employees(params, query):
     name = params.get("name")
     if name:
         query = query.filter(models.Employee.name.ilike(f"%{name}%"))
+    # Add more filters as needed
+    return query
+
+from fastapi.responses import JSONResponse
+
+def filter_permissions(params, query):
+    name = params.get("name")
+    if name:
+        query = query.filter(models.Permission.name.ilike(f"%{name}%"))
+    # Add more filters as needed
+    return query
+
+from fastapi.responses import JSONResponse
+
+def filter_roles(params, query):
+    name = params.get("name")
+    if name:
+        query = query.filter(models.Role.name.ilike(f"%{name}%"))
     # Add more filters as needed
     return query
 
