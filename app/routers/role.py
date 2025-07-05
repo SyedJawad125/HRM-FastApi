@@ -53,11 +53,7 @@ def create_role(
     current_user: models.User = Depends(oauth2.get_current_user)
 ) -> Any:
     try:
-        if not current_user.is_admin:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only admin users can create Roles"
-            )
+        
 
         role_data = role.dict()
         role_data["created_by_user_id"] = current_user.id  # ✅ Correct field name
@@ -93,11 +89,7 @@ def patch_update_role(
     current_user: models.User = Depends(oauth2.get_current_user)
 ):
     try:
-        if not current_user.is_admin:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only admin users can update Roles"
-            )
+        
 
         role_instance = db.query(models.Role).filter(models.Role.id == id).first()
 
@@ -134,11 +126,7 @@ def delete_role(
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(oauth2.get_current_user)
 ):
-    if not current_user.is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admin users can delete Roles"
-        )
+    
 
     role_query = db.query(models.Role).filter(models.Role.id == id)
     role = role_query.first()

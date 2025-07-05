@@ -53,11 +53,7 @@ def create_permission(
     current_user: models.User = Depends(oauth2.get_current_user)
 ) -> Any:
     try:
-        if not current_user.is_admin:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only admin users can create permissions"
-            )
+        
 
         permission_data = permission.dict()
         permission_data["created_by_user_id"] = current_user.id  # ✅ Correct field name
@@ -93,11 +89,7 @@ def patch_update_permission(
     current_user: models.User = Depends(oauth2.get_current_user)
 ):
     try:
-        if not current_user.is_admin:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only admin users can update permissions"
-            )
+        
 
         permission_instance = db.query(models.Permission).filter(models.Permission.id == id).first()
 
@@ -134,11 +126,7 @@ def delete_permission(
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(oauth2.get_current_user)
 ):
-    if not current_user.is_admin:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only admin users can delete permissions"
-        )
+    
 
     permission_query = db.query(models.Permission).filter(models.Permission.id == id)
     permission = permission_query.first()
