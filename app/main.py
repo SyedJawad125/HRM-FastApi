@@ -35,16 +35,14 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
 from .database import engine, Base
-from .routers import employee, department, auth, user
-from .models import User, Department  # Import all your models
+from .routers import employee, department, auth, user, role, permission
+from .models import User, Department  # All models, if needed
 
 app = FastAPI()
 
-
-# Department.__table__.drop(bind=engine)
-# Department.__table__.create(bind=engine)
-# CORS configuration
+# Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -53,14 +51,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-
-
-# Include routers
+# Routers
 app.include_router(auth.router)
 app.include_router(user.router)
 app.include_router(employee.router)
 app.include_router(department.router)
+app.include_router(permission.router)  # ✅ FIXED
+app.include_router(role.router)
 
 @app.get("/")
 def root():

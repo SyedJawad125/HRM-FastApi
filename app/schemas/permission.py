@@ -1,19 +1,21 @@
+# app/schemas/permission.py
+
 from typing import Optional, List
 from pydantic import BaseModel
 
-# ✅ Base schema for shared fields
+# Shared base schema
 class PermissionBase(BaseModel):
     name: str
     description: str
     code: str
     module_name: Optional[str] = None
 
-# ✅ For create endpoint
+# For permission creation
 class PermissionCreate(PermissionBase):
     class Config:
         extra = "forbid"
 
-# ✅ For update endpoint
+# For permission update
 class PermissionUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
@@ -23,19 +25,19 @@ class PermissionUpdate(BaseModel):
     class Config:
         extra = "forbid"
 
-# ✅ For response model
+# Permission response schema
 class Permission(PermissionBase):
     id: int
 
     class Config:
-        from_attributes = True
+        from_attributes = True  # Pydantic v2 equivalent of orm_mode
 
-# ✅ For paginated response
+# Paginated permission list
 class PaginatedPermissions(BaseModel):
     count: int
     data: List[Permission]
 
-# ✅ Final API response structure
+# Full API response wrapper
 class PermissionListResponse(BaseModel):
     status: str
     result: PaginatedPermissions

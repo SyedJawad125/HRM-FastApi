@@ -18,4 +18,7 @@ class Role(Base):
     description = Column(Text, nullable=False)
     code = Column(String(50), nullable=True)
 
-    permissions = relationship("Permission", secondary=role_permission, back_populates="roles")
+    created_by_user_id = Column(Integer, ForeignKey("users.id"))
+    creator = relationship("User", back_populates="created_roles")
+
+    permissions = relationship("Permission", secondary="role_permission", back_populates="roles")
