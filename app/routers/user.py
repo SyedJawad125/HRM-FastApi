@@ -104,51 +104,103 @@ async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 #         "permissions": list(permission_names),
 #     }
 
+# @router.post("/login")
+# def login(user_credentials: schemas.LoginRequest, db: Session = Depends(database.get_db)):
+#     user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
+
+#     if not user or not utils.verify_password(user_credentials.password, user.hashed_password):
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="Invalid Credentials"
+#         )
+
+#     # ✅ Token
+#     access_token = oauth2.create_access_token(data={"user_id": user.id})
+
+#     # ✅ Get only the permissions from the user's role
+#     if not user.role:
+#         raise HTTPException(status_code=400, detail="User has no role assigned")
+
+#     role = user.role  # Already linked via ForeignKey
+#     permissions = role.permissions  # ✅ Only permissions assigned to that role
+
+#     # ✅ Build permission list to return
+#     permission_list = [
+#         {
+#             "id": p.id,
+#             "name": p.name,
+#             "code": p.code,
+#             "description": p.description,
+#             "module_name": p.module_name
+#         }
+#         for p in permissions
+#     ]
+
+#     return {
+#         "access_token": access_token,
+#         "token_type": "bearer",
+#         "user_id": user.id,
+#         "username": user.username,
+#         "email": user.email,
+#         "role_id": user.role_id,
+#         "permissions": permission_list
+#     }
+
+
 @router.post("/login")
 def login(user_credentials: schemas.LoginRequest, db: Session = Depends(database.get_db)):
+    # Step 1: Authenticate user
     user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
-
+    
     if not user or not utils.verify_password(user_credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid Credentials"
+            detail="Incorrect email or password"
         )
 
-    # ✅ Token
+    # Step 2: (Optional) Check if user is active
+    if hasattr(user, "is_active") and not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is disabled"
+        )
+
+    # Step 3: Load all permissions to prepare a permission map
+    all_permissions = db.query(models.Permission).all()
+    permissions_dict = {perm.code: False for perm in all_permissions}
+
+    # Step 4: Assign permissions
+    if user.is_superuser and not user.role:
+        # Superuser with no role gets full access
+        for perm in all_permissions:
+            permissions_dict[perm.code] = True
+    elif user.role:
+        # Regular user or superuser with a role gets role-specific permissions
+        for perm in user.role.permissions:
+            permissions_dict[perm.code] = True
+    else:
+        # No role assigned
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User has no role assigned"
+        )
+
+    # Step 5: Create access token
     access_token = oauth2.create_access_token(data={"user_id": user.id})
 
-    # ✅ Get only the permissions from the user's role
-    if not user.role:
-        raise HTTPException(status_code=400, detail="User has no role assigned")
-
-    role = user.role  # Already linked via ForeignKey
-    permissions = role.permissions  # ✅ Only permissions assigned to that role
-
-    # ✅ Build permission list to return
-    permission_list = [
-        {
-            "id": p.id,
-            "name": p.name,
-            "code": p.code,
-            "description": p.description,
-            "module_name": p.module_name
-        }
-        for p in permissions
-    ]
-
+    # Step 6: Return full response
     return {
+        "message": "Successful",
         "access_token": access_token,
         "token_type": "bearer",
         "user_id": user.id,
         "username": user.username,
         "email": user.email,
-        "role_id": user.role_id,
-        "permissions": permission_list
+        "is_superuser": bool(user.is_superuser),  # ✅ Always return true or false correctly
+        "role_id": user.role.id if user.role else None,
+        "role_name": user.role.name if user.role else None,
+        "permissions": permissions_dict
     }
-
-
-
-
 
 
 @router.get("/{id}", response_model=schemas.UserOut)
