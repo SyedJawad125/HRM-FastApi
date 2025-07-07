@@ -1,7 +1,14 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, Table
 from sqlalchemy.orm import relationship
 from app.database import Base
 
+
+user_permission = Table(
+    "user_permission",
+    Base.metadata,
+    Column("user_id", Integer, ForeignKey("users.id")),
+    Column("permission_id", Integer, ForeignKey("permissions.id"))
+)
 
 class Permission(Base):
     __tablename__ = 'permissions'
@@ -16,3 +23,11 @@ class Permission(Base):
     creator = relationship("User", back_populates="created_permissions")
 
     roles = relationship("Role", secondary="role_permission", back_populates="permissions")
+    
+    users = relationship(
+    "User",
+    secondary=user_permission,
+    back_populates="permissions"
+)
+
+    

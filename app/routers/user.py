@@ -73,36 +73,6 @@ async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 
 # router = APIRouter(tags=["Authentication"])
 
-# @router.post("/login")
-# def login(user_credentials: schemas.LoginRequest, db: Session = Depends(database.get_db)):
-#     user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
-
-#     if not user or not utils.verify_password(user_credentials.password, user.hashed_password):
-#         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid Credentials")
-
-#     access_token = oauth2.create_access_token(data={"user_id": user.id})
-
-#     # 🔐 Collect permissions
-#     permission_names = set()
-
-#     if user.is_superuser:
-#         # Superuser: get all permissions
-#         permissions = db.query(models.Permission).all()
-#         permission_names = {p.name for p in permissions}
-#     else:
-#         # Regular user: get permissions from roles
-#         for role in user.roles:
-#             for permission in role.permissions:
-#                 permission_names.add(permission.name)
-
-#     return {
-#         "access_token": access_token,
-#         "token_type": "bearer",
-#         "user_id": user.id,
-#         "username": user.username,
-#         "email": user.email,
-#         "permissions": list(permission_names),
-#     }
 
 # @router.post("/login")
 # def login(user_credentials: schemas.LoginRequest, db: Session = Depends(database.get_db)):
@@ -147,39 +117,99 @@ async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 #     }
 
 
+# @router.post("/login")
+# def login(user_credentials: schemas.LoginRequest, db: Session = Depends(database.get_db)):
+#     # Step 1: Authenticate user
+#     user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
+    
+#     if not user or not utils.verify_password(user_credentials.password, user.hashed_password):
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="Incorrect email or password"
+#         )
+
+#     # Step 2: (Optional) Check if user is active
+#     if hasattr(user, "is_active") and not user.is_active:
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="Account is disabled"
+#         )
+
+#     # Step 3: Load all permissions to prepare a permission map
+#     all_permissions = db.query(models.Permission).all()
+#     permissions_dict = {perm.code: False for perm in all_permissions}
+
+#     # Step 4: Assign permissions
+#     if user.is_superuser and not user.role:
+#         # Superuser with no role gets full access
+#         for perm in all_permissions:
+#             permissions_dict[perm.code] = True
+#     elif user.role:
+#         # Regular user or superuser with a role gets role-specific permissions
+#         for perm in user.role.permissions:
+#             permissions_dict[perm.code] = True
+#     else:
+#         # No role assigned
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="User has no role assigned"
+#         )
+
+#     # Step 5: Create access token
+#     access_token = oauth2.create_access_token(data={"user_id": user.id})
+
+#     # Step 6: Return full response
+#     return {
+#         "message": "Successful",
+#         "access_token": access_token,
+#         "token_type": "bearer",
+#         "user_id": user.id,
+#         "username": user.username,
+#         "email": user.email,
+#         "is_superuser": bool(user.is_superuser),  # ✅ Always return true or false correctly
+#         "role_id": user.role.id if user.role else None,
+#         "role_name": user.role.name if user.role else None,
+#         "permissions": permissions_dict
+#     }
+
 @router.post("/login")
 def login(user_credentials: schemas.LoginRequest, db: Session = Depends(database.get_db)):
     # Step 1: Authenticate user
     user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
-    
+
     if not user or not utils.verify_password(user_credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Incorrect email or password"
         )
 
-    # Step 2: (Optional) Check if user is active
+    # Step 2: Check if user is active (optional)
     if hasattr(user, "is_active") and not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is disabled"
         )
 
-    # Step 3: Load all permissions to prepare a permission map
+    # Step 3: Load all permissions and initialize permissions_dict
     all_permissions = db.query(models.Permission).all()
     permissions_dict = {perm.code: False for perm in all_permissions}
 
-    # Step 4: Assign permissions
+    # Step 4: Determine is_superuser based on role
+    is_superuser_response = False
+
     if user.is_superuser and not user.role:
-        # Superuser with no role gets full access
+        # Superuser with no role: grant all permissions
         for perm in all_permissions:
             permissions_dict[perm.code] = True
+        is_superuser_response = True
+
     elif user.role:
-        # Regular user or superuser with a role gets role-specific permissions
+        # Role-based user (even if is_superuser in DB): only assign role permissions
         for perm in user.role.permissions:
             permissions_dict[perm.code] = True
+
     else:
-        # No role assigned
+        # No role and not a superuser => invalid user setup
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User has no role assigned"
@@ -196,11 +226,13 @@ def login(user_credentials: schemas.LoginRequest, db: Session = Depends(database
         "user_id": user.id,
         "username": user.username,
         "email": user.email,
-        "is_superuser": bool(user.is_superuser),  # ✅ Always return true or false correctly
+        "is_superuser": is_superuser_response,  # ✅ True only if superuser AND no role
         "role_id": user.role.id if user.role else None,
         "role_name": user.role.name if user.role else None,
         "permissions": permissions_dict
     }
+
+
 
 
 @router.get("/{id}", response_model=schemas.UserOut)

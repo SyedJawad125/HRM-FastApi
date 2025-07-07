@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, status, Request, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional, Any
+
+from app.dependencies.permission import permission_required, require
 from .. import database, schemas, models, oauth2
 from app.utils import paginate_data, create_response, filter_departments
 from fastapi.responses import JSONResponse
@@ -15,7 +17,7 @@ router = APIRouter(
 # @router.get("/", response_model=List[schemas.Department])
 
 # @router.get("/", response_model=Any)
-@router.get("/", response_model=schemas.DepartmentListResponse)
+@router.get("/", response_model=schemas.DepartmentListResponse, dependencies=[require("read_department")])
 def get_departments(
     request: Request,
     db: Session = Depends(database.get_db),
@@ -46,7 +48,7 @@ def get_departments(
 
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Department)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Department, dependencies=[require("create_department")])
 # @router.post("/", status_code=status.HTTP_201_CREATED)
 def create_department(
     department: schemas.DepartmentCreate,
@@ -82,7 +84,7 @@ def create_department(
 
 
 
-@router.get("/{id}", response_model=schemas.Department)
+@router.get("/{id}", response_model=schemas.Department, dependencies=[require("read_department")])
 def get_department(id: int, db: Session = Depends(database.get_db), 
                   current_user: models.User = Depends(oauth2.get_current_user)):
     department = db.query(models.Department).filter(models.Department.id == id).first()
@@ -91,7 +93,7 @@ def get_department(id: int, db: Session = Depends(database.get_db),
                            detail=f"Department with id {id} not found")
     return department
 
-@router.patch("/{id}", response_model=schemas.Department)
+@router.patch("/{id}", response_model=schemas.Department, dependencies=[require("update_department")])
 def patch_update_department(
     id: int,
     updated_department: schemas.DepartmentUpdate,
@@ -138,14 +140,9 @@ def patch_update_department(
 def delete_department(
     id: int,
     db: Session = Depends(database.get_db),
-    current_user: models.User = Depends(oauth2.get_current_user)
+    current_user: models.User = Depends(oauth2.get_current_user),
+    _: None = Depends(permission_required(["delete_department"]))
 ):
-    # if not current_user.is_admin:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_403_FORBIDDEN,
-    #         detail="Only admin users can delete departments"
-    #     )
-
     department_query = db.query(models.Department).filter(models.Department.id == id)
     department = department_query.first()
 

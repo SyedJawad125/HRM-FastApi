@@ -7,7 +7,7 @@ from sqlalchemy.sql import func
 from datetime import datetime
 
 from sqlalchemy.orm import relationship
-
+from app.models.permission import Permission, user_permission
 
 # class User(Base):
 #     __tablename__ = "users"
@@ -50,3 +50,6 @@ class User(Base):
     created_departments = relationship("Department", back_populates="creator")
     created_roles = relationship("Role", back_populates="creator", foreign_keys="Role.created_by_user_id")
     created_permissions = relationship("Permission", back_populates="creator")
+
+   # ✅ Add this to fix permission loading
+    permissions = relationship("Permission",secondary=user_permission,back_populates="users")

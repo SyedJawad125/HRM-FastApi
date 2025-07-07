@@ -149,3 +149,122 @@ def delete_role(
 
     return {"message": "Role deleted successfully"}
 
+
+
+
+# @router.post("/login")
+# def login(user_credentials: schemas.LoginRequest, db: Session = Depends(database.get_db)):
+#     # Step 1: Authenticate user
+#     user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
+    
+#     if not user or not utils.verify_password(user_credentials.password, user.hashed_password):
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="Incorrect email or password"
+#         )
+
+#     # Step 2: (Optional) Check if user is active
+#     if hasattr(user, "is_active") and not user.is_active:
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="Account is disabled"
+#         )
+
+#     # Step 3: Load all permissions to prepare a permission map
+#     all_permissions = db.query(models.Permission).all()
+#     permissions_dict = {perm.code: False for perm in all_permissions}
+
+#     # Step 4: Assign permissions
+#     if user.is_superuser and not user.role:
+#         # Superuser with no role gets full access
+#         for perm in all_permissions:
+#             permissions_dict[perm.code] = True
+#     elif user.role:
+#         # Regular user or superuser with a role gets role-specific permissions
+#         for perm in user.role.permissions:
+#             permissions_dict[perm.code] = True
+#     else:
+#         # No role assigned
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="User has no role assigned"
+#         )
+
+#     # Step 5: Create access token
+#     access_token = oauth2.create_access_token(data={"user_id": user.id})
+
+#     # Step 6: Return full response
+#     return {
+#         "message": "Successful",
+#         "access_token": access_token,
+#         "token_type": "bearer",
+#         "user_id": user.id,
+#         "username": user.username,
+#         "email": user.email,
+#         "is_superuser": bool(user.is_superuser),  # ✅ Always return true or false correctly
+#         "role_id": user.role.id if user.role else None,
+#         "role_name": user.role.name if user.role else None,
+#         "permissions": permissions_dict
+#     }
+
+
+
+# @router.post("/login")
+# def login(user_credentials: schemas.LoginRequest, db: Session = Depends(database.get_db)):
+#     # Step 1: Authenticate user
+#     user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
+
+#     if not user or not utils.verify_password(user_credentials.password, user.hashed_password):
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="Incorrect email or password"
+#         )
+
+#     # Step 2: Check if user is active (optional)
+#     if hasattr(user, "is_active") and not user.is_active:
+#         raise HTTPException(
+#             status_code=status.HTTP_403_FORBIDDEN,
+#             detail="Account is disabled"
+#         )
+
+#     # Step 3: Load all permissions and initialize permissions_dict
+#     all_permissions = db.query(models.Permission).all()
+#     permissions_dict = {perm.code: False for perm in all_permissions}
+
+#     # Step 4: Determine is_superuser based on role
+#     is_superuser_response = False
+
+#     if user.is_superuser and not user.role:
+#         # Superuser with no role: grant all permissions
+#         for perm in all_permissions:
+#             permissions_dict[perm.code] = True
+#         is_superuser_response = True
+
+#     elif user.role:
+#         # Role-based user (even if is_superuser in DB): only assign role permissions
+#         for perm in user.role.permissions:
+#             permissions_dict[perm.code] = True
+
+#     else:
+#         # No role and not a superuser => invalid user setup
+#         raise HTTPException(
+#             status_code=status.HTTP_400_BAD_REQUEST,
+#             detail="User has no role assigned"
+#         )
+
+#     # Step 5: Create access token
+#     access_token = oauth2.create_access_token(data={"user_id": user.id})
+
+#     # Step 6: Return full response
+#     return {
+#         "message": "Successful",
+#         "access_token": access_token,
+#         "token_type": "bearer",
+#         "user_id": user.id,
+#         "username": user.username,
+#         "email": user.email,
+#         "is_superuser": is_superuser_response,  # ✅ True only if superuser AND no role
+#         "role_id": user.role.id if user.role else None,
+#         "role_name": user.role.name if user.role else None,
+#         "permissions": permissions_dict
+#     }
