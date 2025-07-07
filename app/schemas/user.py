@@ -13,7 +13,9 @@ class UserCreate(BaseModel):
     username: Optional[str] = None
     email: EmailStr
     password: str
-    role_id: int
+    # role_id: int
+    is_superuser: Optional[bool] = False  # default to False
+    role_id: Optional[int] = None         # Optional, validated in endpoint logic
 
 
 # class UserLogin(BaseModel):  # This was missing

@@ -24,6 +24,50 @@ router = APIRouter(
 from fastapi import HTTPException
 import traceback
 
+# @router.post("/signup", response_model=schemas.Token)
+# async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+#     try:
+#         # Check if user already exists
+#         db_user = db.query(models.User).filter(models.User.email == user.email).first()
+#         if db_user:
+#             raise HTTPException(
+#                 status_code=status.HTTP_400_BAD_REQUEST,
+#                 detail="Email already registered"
+#             )
+
+#         # Check if role exists
+#         role = db.query(models.Role).filter(models.Role.id == user.role_id).first()
+#         if not role:
+#             raise HTTPException(
+#                 status_code=status.HTTP_404_NOT_FOUND,
+#                 detail="Role not found"
+#             )
+
+#         # Hash password
+#         hashed_password = utils.get_password_hash(user.password)
+
+#         # Create user
+#         new_user = models.User(
+#             username=user.username,
+#             email=user.email,
+#             hashed_password=hashed_password,
+#             is_active=True,
+#             role_id=user.role_id
+#         )
+
+#         db.add(new_user)
+#         db.commit()
+#         db.refresh(new_user)
+
+#         # Token
+#         access_token = oauth2.create_access_token(data={"user_id": new_user.id})
+#         return {"access_token": access_token, "token_type": "bearer"}
+
+#     except Exception as e:
+#         traceback.print_exc()  # Show error in terminal
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.post("/signup", response_model=schemas.Token)
 async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     try:
@@ -35,16 +79,27 @@ async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
                 detail="Email already registered"
             )
 
-        # Check if role exists
-        role = db.query(models.Role).filter(models.Role.id == user.role_id).first()
-        if not role:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Role not found"
-            )
-
         # Hash password
         hashed_password = utils.get_password_hash(user.password)
+
+        # Superuser flag (optional)
+        is_superuser = getattr(user, "is_superuser", False)
+
+        # Validate role only if not superuser
+        role = None
+        if not is_superuser:
+            if user.role_id is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="role_id is required for non-superusers"
+                )
+
+            role = db.query(models.Role).filter(models.Role.id == user.role_id).first()
+            if not role:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Role not found"
+                )
 
         # Create user
         new_user = models.User(
@@ -52,21 +107,23 @@ async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
             email=user.email,
             hashed_password=hashed_password,
             is_active=True,
-            role_id=user.role_id
+            is_superuser=is_superuser,
+            role_id=user.role_id if not is_superuser else None
         )
 
         db.add(new_user)
         db.commit()
         db.refresh(new_user)
 
-        # Token
+        # Create token
         access_token = oauth2.create_access_token(data={"user_id": new_user.id})
         return {"access_token": access_token, "token_type": "bearer"}
 
+    except HTTPException:
+        raise  # Re-raise HTTPExceptions without modification
     except Exception as e:
-        traceback.print_exc()  # Show error in terminal
-        raise HTTPException(status_code=500, detail=str(e))
-
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # @router.post("/login", response_model=Token)
@@ -74,47 +131,6 @@ async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
 # router = APIRouter(tags=["Authentication"])
 
 
-# @router.post("/login")
-# def login(user_credentials: schemas.LoginRequest, db: Session = Depends(database.get_db)):
-#     user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
-
-#     if not user or not utils.verify_password(user_credentials.password, user.hashed_password):
-#         raise HTTPException(
-#             status_code=status.HTTP_403_FORBIDDEN,
-#             detail="Invalid Credentials"
-#         )
-
-#     # ✅ Token
-#     access_token = oauth2.create_access_token(data={"user_id": user.id})
-
-#     # ✅ Get only the permissions from the user's role
-#     if not user.role:
-#         raise HTTPException(status_code=400, detail="User has no role assigned")
-
-#     role = user.role  # Already linked via ForeignKey
-#     permissions = role.permissions  # ✅ Only permissions assigned to that role
-
-#     # ✅ Build permission list to return
-#     permission_list = [
-#         {
-#             "id": p.id,
-#             "name": p.name,
-#             "code": p.code,
-#             "description": p.description,
-#             "module_name": p.module_name
-#         }
-#         for p in permissions
-#     ]
-
-#     return {
-#         "access_token": access_token,
-#         "token_type": "bearer",
-#         "user_id": user.id,
-#         "username": user.username,
-#         "email": user.email,
-#         "role_id": user.role_id,
-#         "permissions": permission_list
-#     }
 
 
 # @router.post("/login")
@@ -231,8 +247,6 @@ def login(user_credentials: schemas.LoginRequest, db: Session = Depends(database
         "role_name": user.role.name if user.role else None,
         "permissions": permissions_dict
     }
-
-
 
 
 @router.get("/{id}", response_model=schemas.UserOut)
