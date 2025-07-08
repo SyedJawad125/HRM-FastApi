@@ -4,6 +4,8 @@ from typing import List, Optional, Any
 from .. import database, schemas, models, oauth2
 from app.utils import paginate_data, create_response, filter_roles
 from fastapi.responses import JSONResponse
+from app.dependencies.permission import permission_required, require
+
 
 
 router = APIRouter(
@@ -14,7 +16,7 @@ router = APIRouter(
 # @router.get("/", response_model=List[schemas.Department])
 
 # @router.get("/", response_model=Any)
-@router.get("/", response_model=schemas.RoleListResponse)
+@router.get("/", response_model=schemas.RoleListResponse, dependencies=[require("read_role")])
 def get_roles(
     request: Request,
     db: Session = Depends(database.get_db),
@@ -45,7 +47,7 @@ def get_roles(
 
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Role)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Role, dependencies=[require("create_role")])
 def create_role(
     role: schemas.RoleCreate,
     db: Session = Depends(database.get_db),
@@ -79,7 +81,7 @@ def create_role(
 
 
 
-@router.get("/{id}", response_model=schemas.Role)
+@router.get("/{id}", response_model=schemas.Role, dependencies=[require("read_role")])
 def get_role(id: int, db: Session = Depends(database.get_db), 
                   current_user: models.User = Depends(oauth2.get_current_user)):
     role = db.query(models.Role).filter(models.Role.id == id).first()
@@ -88,7 +90,43 @@ def get_role(id: int, db: Session = Depends(database.get_db),
                            detail=f"Role with id {id} not found")
     return role
 
-@router.patch("/{id}", response_model=schemas.Role)
+# @router.patch("/{id}", response_model=schemas.Role, dependencies=[require("update_role")])
+# def patch_update_role(
+#     id: int,
+#     updated_role: schemas.RoleUpdate,
+#     db: Session = Depends(database.get_db),
+#     current_user: models.User = Depends(oauth2.get_current_user)
+# ):
+#     try:
+        
+
+#         role_instance = db.query(models.Role).filter(models.Role.id == id).first()
+
+#         if not role_instance:
+#             raise HTTPException(
+#                 status_code=status.HTTP_404_NOT_FOUND,
+#                 detail=f"Role with id {id} not found"
+#             )
+
+#         update_data = updated_role.dict(exclude_unset=True)
+
+#         for key, value in update_data.items():
+#             setattr(role_instance, key, value)
+
+#         db.commit()
+#         db.refresh(role_instance)
+
+#         return role_instance
+
+#     except HTTPException as he:
+#         raise he
+#     except Exception as e:
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail=f"An error occurred while patching the Role: {str(e)}"
+#         )
+
+@router.patch("/{id}", response_model=schemas.Role, dependencies=[require("update_role")])
 def patch_update_role(
     id: int,
     updated_role: schemas.RoleUpdate,
@@ -96,8 +134,6 @@ def patch_update_role(
     current_user: models.User = Depends(oauth2.get_current_user)
 ):
     try:
-        
-
         role_instance = db.query(models.Role).filter(models.Role.id == id).first()
 
         if not role_instance:
@@ -108,8 +144,19 @@ def patch_update_role(
 
         update_data = updated_role.dict(exclude_unset=True)
 
-        for key, value in update_data.items():
-            setattr(role_instance, key, value)
+        # Update basic fields
+        for key in ['name', 'description', 'code']:
+            if key in update_data:
+                setattr(role_instance, key, update_data[key])
+
+        # Handle permission_ids manually
+        if 'permission_ids' in update_data:
+            # Clear existing permissions
+            role_instance.permissions.clear()
+
+            # Add new permissions
+            permissions = db.query(models.Permission).filter(models.Permission.id.in_(update_data['permission_ids'])).all()
+            role_instance.permissions.extend(permissions)
 
         db.commit()
         db.refresh(role_instance)
@@ -131,7 +178,9 @@ def patch_update_role(
 def delete_role(
     id: int,
     db: Session = Depends(database.get_db),
-    current_user: models.User = Depends(oauth2.get_current_user)
+    current_user: models.User = Depends(oauth2.get_current_user),
+    _: None = Depends(permission_required(["delete_role"]))
+
 ):
     
 

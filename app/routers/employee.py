@@ -4,6 +4,7 @@ from typing import List, Any
 from .. import database, schemas, models, oauth2
 from app.schemas.employee import Employee, EmployeeCreate  # Explicit imports
 from app.utils import paginate_data, create_response, filter_employees
+from app.dependencies.permission import permission_required, require
 
 router = APIRouter(
     prefix="/employees",
@@ -11,7 +12,7 @@ router = APIRouter(
 )
 
 # @router.get("/", response_model=List[schemas.Employee])
-@router.get("/", response_model=schemas.EmployeeListResponse)
+@router.get("/", response_model=schemas.EmployeeListResponse, dependencies=[require("read_employee")])
 def get_employees(
     request: Request,
     db: Session = Depends(database.get_db),
@@ -39,7 +40,7 @@ def get_employees(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Employee)
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Employee, dependencies=[require("create_employee")])
 def create_employee(
     employee: schemas.EmployeeCreate,
     db: Session = Depends(database.get_db),
@@ -68,7 +69,7 @@ def create_employee(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/{id}", response_model=schemas.Employee)
+@router.get("/{id}", response_model=schemas.Employee, dependencies=[require("read_employee")])
 def get_employee(id: int, db: Session = Depends(database.get_db), 
                 current_user: models.User = Depends(oauth2.get_current_user)):
     employee = db.query(models.Employee).filter(models.Employee.id == id).first()
@@ -77,7 +78,7 @@ def get_employee(id: int, db: Session = Depends(database.get_db),
                            detail=f"Employee with id {id} not found")
     return employee
 
-@router.patch("/{id}", response_model=schemas.Employee)
+@router.patch("/{id}", response_model=schemas.Employee, dependencies=[require("update_employee")])
 # def update_employee(id: int, updated_employee: schemas.EmployeeCreate, 
 def update_employee(
     id: int,
@@ -119,7 +120,8 @@ def update_employee(
 def delete_employee(
     id: int,
     db: Session = Depends(database.get_db),
-    current_user: models.User = Depends(oauth2.get_current_user)
+    current_user: models.User = Depends(oauth2.get_current_user),
+    _: None = Depends(permission_required(["delete_employee"]))
 ):
     
 
