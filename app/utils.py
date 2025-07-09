@@ -38,13 +38,19 @@ def filter_departments(params, query):
     # Add more filters as needed
     return query
 
-from fastapi.responses import JSONResponse
 
 
 def filter_employees(params, query):
     name = params.get("name")
     if name:
         query = query.filter(models.Employee.name.ilike(f"%{name}%"))
+    # Add more filters as needed
+    return query
+
+def filter_ranks(params, query):
+    title = params.get("title")
+    if title:
+        query = query.filter(models.Rank.title.ilike(f"%{title}%"))
     # Add more filters as needed
     return query
 

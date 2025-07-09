@@ -50,6 +50,7 @@ class User(Base):
     created_departments = relationship("Department", back_populates="creator")
     created_roles = relationship("Role", back_populates="creator", foreign_keys="Role.created_by_user_id")
     created_permissions = relationship("Permission", back_populates="creator")
+    created_ranks = relationship("Rank", back_populates="creator")
 
    # ✅ Add this to fix permission loading
     permissions = relationship("Permission",secondary=user_permission,back_populates="users")

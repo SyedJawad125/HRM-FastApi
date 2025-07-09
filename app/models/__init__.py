@@ -1,11 +1,9 @@
 from .user import User
-from .employee import Employee
 from .department import Department
-from .permission import Permission
-from .role import Role, role_permission  # bring role_permission here
-from .association_tables import user_role  # bring user_role from new file
+from .employee import Employee
+from .role import Role
+from .rank import Rank
+from .attendance import Attendance
+from .timesheet import Timesheet
 
-__all__ = [
-    "User", "Employee", "Department", "Permission",
-    "Role", "role_permission", "user_role"
-]
+__all__ = ["User", "Department", "Employee", "Role", "Rank", "Attendance", "Timesheet"]

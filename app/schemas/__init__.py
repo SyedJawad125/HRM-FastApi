@@ -27,6 +27,14 @@ from .department import (
     PaginatedDepartments,
     DepartmentListResponse
 )
+from .rank import (
+    RankBase,
+    RankCreate,
+    Rank,
+    RankUpdate,
+    PaginatedRanks,
+    RankListResponse
+)
 
 from .permission import (
     PermissionBase,
@@ -52,6 +60,7 @@ __all__ = [
     'Employee', 'EmployeeCreate','PaginatedEmployees','EmployeeListResponse','EmployeeUpdate',
     'DepartmentBase', 'DepartmentCreate', 'Department', 'DepartmentUpdate',
     'PaginatedDepartments', 'DepartmentListResponse',
+    'RankBase', 'RankCreate', 'Rank', 'RankUpdate', 'PaginatedRanks', 'RankListResponse',
     'PermissionBase', 'PermissionCreate' ,'PermissionUpdate','Permission', 'PaginatedPermissions', 'PermissionListResponse',
     'RoleBase', 'RoleCreate', 'RoleUpdate', 'Role', 'PaginatedRoles', 'RoleListResponse',
 

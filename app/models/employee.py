@@ -17,4 +17,12 @@ class Employee(Base):
     department_id = Column(Integer, ForeignKey("departments.id"))
     
     department = relationship("Department", back_populates="employees")
+    # ✅ Foreign key column
+    rank_id = Column(Integer, ForeignKey("ranks.id"))
+
+    # ✅ Relationship back to Rank
+    rank = relationship("Rank", back_populates="employees")
     
+    # Add relationships for attendance and timesheet
+    attendances = relationship("Attendance", back_populates="employee")
+    timesheets = relationship("Timesheet", back_populates="employee")

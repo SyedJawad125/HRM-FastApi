@@ -13,3 +13,4 @@ class Department(Base):
     creator = relationship("User", back_populates="created_departments")
     employees = relationship("Employee", back_populates="department")
     created_by_user_id = Column(Integer, ForeignKey("users.id"))
+    ranks = relationship("Rank", back_populates="department")
