@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.models import attendance
+
 from .database import engine, Base
-from .routers import employee, department, auth, user, role, permission, rank
+from .routers import employee, department, auth, user, role, permission, rank, attendance, timesheet
 from .models import User, Department  # All models, if needed
 
 app = FastAPI()
@@ -22,6 +24,8 @@ app.include_router(user.router)
 app.include_router(employee.router)
 app.include_router(department.router)
 app.include_router(rank.router)
+app.include_router(attendance.router)
+app.include_router(timesheet.router)
 app.include_router(permission.router)  # ✅ FIXED
 app.include_router(role.router)
 
