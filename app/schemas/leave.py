@@ -123,8 +123,8 @@ class LeaveResponse(LeaveBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     employee_id: int
-    approved_by_id: Optional[int] = None
-    approved_by: Optional[Approver] = None  # Nested object
+    # approved_by_id: Optional[int] = None
+    # approved_by: Optional[Approver] = None  # Nested object
 
     class Config:
         from_attributes = True
