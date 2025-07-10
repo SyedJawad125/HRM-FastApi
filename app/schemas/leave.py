@@ -147,7 +147,7 @@ class LeaveList(BaseModel):
 class LeaveListResponse(BaseModel):
     count: int
     data: list[LeaveList]
-
+    
 
 class LeaveListResult(BaseModel):
     count: int
