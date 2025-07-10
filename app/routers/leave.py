@@ -16,8 +16,6 @@ router = APIRouter(
 
 # @router.get("/", response_model=schemas.LeaveListResponse, dependencies=[require("read_leave")])
 @router.get("/", response_model=schemas.LeaveListResponse, dependencies=[require("read_leave")])
-
-
 def get_leaves(
     request: Request,
     db: Session = Depends(database.get_db),
