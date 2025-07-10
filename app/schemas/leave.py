@@ -121,10 +121,17 @@ class CreateLeaveResponse(LeaveBase):
 
     class Config:
         from_attributes = True
-    
+class Role1(BaseModel):
+    id: int
+    name: str  # adjust this field based on your actual Role model
+
+    class Config:
+        from_attributes = True
+
 class Approver1(BaseModel):
     id: int
     username: str
+    role: Optional[Role1] = None  # ✅ Nested role object
 
     class Config:
         from_attributes = True
@@ -159,10 +166,18 @@ class LeaveResponse(LeaveBase):
 # class LeaveListResponse(BaseModel):
 #     count: int
 #     data: list[LeaveList]
-    
+class Role(BaseModel):
+    id: int
+    name: str  # adjust this field based on your actual Role model
+
+    class Config:
+        from_attributes = True
+
 class Approver(BaseModel):
     id: int
     username: str  # Or "name", depending on your User model
+    role: Optional[Role] = None  # ✅ Nested role object
+
 
     class Config:
         from_attributes = True
