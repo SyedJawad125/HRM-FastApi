@@ -61,7 +61,7 @@ def create_timesheet(
     try:
 
         timesheet_data = timesheet.dict()
-        timesheet_data["created_by_user_id"] = current_user.id  # ✅ Correct field name
+        # timesheet_data["created_by_user_id"] = current_user.id  # ✅ Correct field name
 
         new_timesheet = models.Timesheet(**timesheet_data)
         db.add(new_timesheet)

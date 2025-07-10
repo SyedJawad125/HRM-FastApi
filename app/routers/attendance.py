@@ -59,8 +59,8 @@ def create_attendance(
 ) -> Any:
     try:
 
-        attendance_data = Attendance.dict()
-        attendance_data["created_by_user_id"] = current_user.id  # ✅ Correct field name
+        attendance_data = attendance.dict()
+        # attendance_data["created_by_user_id"] = current_user.id  # ✅ Correct field name
 
         new_attendance = models.Attendance(**attendance_data)
         db.add(new_attendance)

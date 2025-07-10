@@ -204,7 +204,7 @@ def update_user(id: int, updated_user: schemas.UserCreate,
     
     # Hash the password if it's being updated
     if updated_user.password:
-        updated_user.password = utils.hash(updated_user.password)
+        updated_user.password = utils.get_password_hash(updated_user.password)
     
     user_query.update(updated_user.dict(), synchronize_session=False)
     db.commit()

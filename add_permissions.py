@@ -22,6 +22,11 @@ permissions = [
     {"name": "Read Rank", "code": "read_rank", "module_name": "Rank", "description": "User can read Rank"},
     {"name": "Update Rank", "code": "update_rank", "module_name": "Rank", "description": "User can update Rank"},
     {"name": "Delete Rank", "code": "delete_rank", "module_name": "Rank", "description": "User can delete Rank"},
+
+    {"name": "Create Leave", "code": "create_leave", "module_name": "Leave", "description": "User can create Leave"},
+    {"name": "Read Leave", "code": "read_leave", "module_name": "Leave", "description": "User can read Leave"},
+    {"name": "Update Leave", "code": "update_leave", "module_name": "Leave", "description": "User can update Leave"},
+    {"name": "Delete Leave", "code": "delete_leave", "module_name": "Leave", "description": "User can delete Leave"},
     
     # {"name": "Create Booking", "code": "create_booking", "module_name": "Booking", "description": "User can create Booking"},
     # {"name": "Read Booking", "code": "read_booking", "module_name": "Booking", "description": "User can read Booking"},

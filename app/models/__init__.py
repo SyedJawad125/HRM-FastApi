@@ -6,5 +6,8 @@ from .permission import Permission
 from .rank import Rank
 from .attendance import Attendance
 from .timesheet import Timesheet
+from .leave import Leave
 
-__all__ = ["User", "Department", "Employee", "Role", "Permission", "Rank", "Attendance", "Timesheet"]
+
+__all__ = ["User", "Department", "Employee", "Role", "Permission", "Rank", "Attendance", "Timesheet", "Leave"]
+

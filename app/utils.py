@@ -113,6 +113,53 @@ def filter_timesheets(params, query):
             raise HTTPException(status_code=400, detail="attendance_id must be an integer.")
 
     return query
+    
+from fastapi import HTTPException
+from sqlalchemy.orm import Query
+from datetime import datetime
+
+from app import models, schemas 
+ # ✅ Keep this if enums are in the same schemas file
+
+
+def filter_leave(params: dict, query: Query):
+    status = params.get("status")
+    leave_type = params.get("leave_type")
+    employee_id = params.get("employee_id")
+    start_date = params.get("start_date")
+    end_date = params.get("end_date")
+
+    if status:
+        if status not in [s.value for s in schemas.LeaveStatus]:  # ✅ Use schemas.LeaveStatus
+            raise HTTPException(status_code=400, detail="Invalid leave status.")
+        query = query.filter(models.Leave.status == status)
+
+    if leave_type:
+        if leave_type not in [lt.value for lt in schemas.LeaveType]:  # ✅ Use schemas.LeaveType
+            raise HTTPException(status_code=400, detail="Invalid leave type.")
+        query = query.filter(models.Leave.leave_type == leave_type)
+
+    if employee_id:
+        try:
+            query = query.filter(models.Leave.employee_id == int(employee_id))
+        except ValueError:
+            raise HTTPException(status_code=400, detail="employee_id must be an integer.")
+
+    if start_date:
+        try:
+            datetime.strptime(start_date, "%Y-%m-%d")
+            query = query.filter(models.Leave.start_date >= start_date)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid start_date format. Use YYYY-MM-DD.")
+
+    if end_date:
+        try:
+            datetime.strptime(end_date, "%Y-%m-%d")
+            query = query.filter(models.Leave.end_date <= end_date)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid end_date format. Use YYYY-MM-DD.")
+
+    return query
 
 
 
