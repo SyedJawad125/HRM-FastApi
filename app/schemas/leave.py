@@ -195,7 +195,7 @@ class LeaveList(BaseModel):
     class Config:
         from_attributes = True
 
-class LeaveListResponse(BaseModel):
+class GetAllLeaveListResponse(BaseModel):
     count: int
     data: list[LeaveList]
 

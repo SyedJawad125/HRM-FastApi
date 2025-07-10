@@ -5,7 +5,7 @@ from typing import List, Any
 from app.dependencies.permission import permission_required, require
 from .. import database, schemas, models, oauth2
 from app.utils import paginate_data, filter_leave
-from app.schemas.leave import LeaveList, LeaveStatus,MyLeaveListResponse, LeaveListResponse, LeaveType, CreateLeaveResponse
+from app.schemas.leave import LeaveList, LeaveStatus,MyLeaveListResponse, GetAllLeaveListResponse, LeaveType, CreateLeaveResponse
 from datetime import datetime
 router = APIRouter(
     prefix="/leaves",
@@ -44,7 +44,7 @@ router = APIRouter(
 
 from sqlalchemy.orm import joinedload
 
-@router.get("/", response_model=schemas.LeaveListResponse, dependencies=[require("read_leave")])
+@router.get("/", response_model=schemas.GetAllLeaveListResponse, dependencies=[require("read_leave")])
 def get_leaves(
     request: Request,
     db: Session = Depends(database.get_db),
