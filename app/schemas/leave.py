@@ -122,7 +122,7 @@ class CreateLeaveResponse(LeaveBase):
     class Config:
         from_attributes = True
     
-class Approver(BaseModel):
+class Approver1(BaseModel):
     id: int
     username: str
 
@@ -135,8 +135,8 @@ class LeaveResponse(LeaveBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     employee_id: int
-    approved_by_id: Optional[int] = None
-    approved_by: Optional[Approver] = None  # Nested object
+    # approved_by_id: Optional[int] = None
+    approved_by: Optional[Approver1] = None  # Nested object
 
     class Config:
         from_attributes = True
@@ -174,7 +174,7 @@ class LeaveList(BaseModel):
     leave_type: LeaveType
     status: LeaveStatus
     employee_id: int
-    approved_by_id: Optional[int] = None
+    # approved_by_id: Optional[int] = None
     approved_by: Optional[Approver] = None  # ✅ Add this line to show approver's name
 
     class Config:
