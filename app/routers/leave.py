@@ -5,7 +5,7 @@ from typing import List, Any
 from app.dependencies.permission import permission_required, require
 from .. import database, schemas, models, oauth2
 from app.utils import paginate_data, filter_leave
-from app.schemas.leave import LeaveList, LeaveStatus, LeaveListResponse, LeaveType
+from app.schemas.leave import LeaveList, LeaveStatus,MyLeaveListResponse, LeaveListResponse, LeaveType
 from datetime import datetime
 router = APIRouter(
     prefix="/leaves",
@@ -70,6 +70,32 @@ def create_leave(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/my-leaves", response_model=MyLeaveListResponse, dependencies=[require("read_leave")])
+def get_my_leaves(
+    request: Request,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(oauth2.get_current_user)
+):
+    try:
+        query = db.query(models.Leave).filter(models.Leave.employee_id == current_user.id)
+        query = filter_leave(dict(request.query_params), query)
+
+
+        all_data = query.all()
+        paginated_data, count = paginate_data(all_data, request)
+
+        serialized_data = [schemas.LeaveList.model_validate(leave) for leave in paginated_data]
+
+        return {
+            "status": "SUCCESSFUL",
+            "result": {
+                "count": count,
+                "data": serialized_data
+            }
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ✅ GET: Single Leave by ID
 @router.get("/{id}", response_model=schemas.LeaveResponse, dependencies=[require("read_leave")])
@@ -123,32 +149,6 @@ def update_leave(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating leave: {str(e)}")
-
-@router.get("/my-leaves", response_model=Any, dependencies=[require("read_leave")])
-def get_my_leaves(
-    request: Request,
-    db: Session = Depends(database.get_db),
-    current_user: models.User = Depends(oauth2.get_current_user)
-):
-    try:
-        query = db.query(models.Leave).filter(models.Leave.employee_id == current_user.id)
-        query = filter_leave.filter_leave(request.query_params, query)
-
-        all_data = query.all()
-        paginated_data, count = paginate_data(all_data, request)
-
-        serialized_data = [schemas.LeaveList.model_validate(leave) for leave in paginated_data]
-
-        return {
-            "status": "SUCCESSFUL",
-            "result": {
-                "count": count,
-                "data": serialized_data
-            }
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ✅ DELETE: Delete Leave

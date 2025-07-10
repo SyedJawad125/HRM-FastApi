@@ -60,7 +60,9 @@ from .leave import (
     LeaveUpdate,
     LeaveResponse,
     LeaveList,
-    LeaveListResponse
+    LeaveListResponse,
+    LeaveListResult,
+    MyLeaveListResponse
 )
 
 from .permission import (
@@ -91,6 +93,7 @@ __all__ = [
     'AttendanceBase', 'AttendanceCreate', 'Attendance', 'AttendanceUpdate', 'PaginatedAttendances', 'AttendanceListResponse',
     'TimesheetBase', 'TimesheetCreate', 'Timesheet', 'TimesheetUpdate', 'PaginatedTimesheets', 'TimesheetListResponse',
     'LeaveStatus', 'LeaveType', 'LeaveBase', 'LeaveCreate', 'LeaveUpdate', 'LeaveResponse', 'LeaveList', 'LeaveListResponse',
+    'LeaveListResult', 'MyLeaveListResponse',   
     'PermissionBase', 'PermissionCreate' ,'PermissionUpdate','Permission', 'PaginatedPermissions', 'PermissionListResponse',
     'RoleBase', 'RoleCreate', 'RoleUpdate', 'Role', 'PaginatedRoles', 'RoleListResponse',
 
