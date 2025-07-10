@@ -38,3 +38,7 @@ class Leave(Base):
     # Relationships
     employee = relationship("User", foreign_keys=[employee_id], backref="leaves_requested")
     approved_by = relationship("User", foreign_keys=[approved_by_id], backref="leaves_approved") 
+
+    approved_by_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+
+    approved_by = relationship("User", foreign_keys=[approved_by_id], backref="approved_leaves")
