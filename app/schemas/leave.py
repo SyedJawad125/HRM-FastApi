@@ -109,13 +109,25 @@ class LeaveUpdate(BaseModel):
     approved_by_id: Optional[int] = None
 
 
-class Approver(BaseModel):
+
+
+class CreateLeaveResponse(LeaveBase):
     id: int
-    name: str
+    status: LeaveStatus
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+    employee_id: int
+   
 
     class Config:
         from_attributes = True
+    
+class Approver(BaseModel):
+    id: int
+    username: str
 
+    class Config:
+        from_attributes = True
 
 class LeaveResponse(LeaveBase):
     id: int
@@ -123,14 +135,38 @@ class LeaveResponse(LeaveBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     employee_id: int
-    # approved_by_id: Optional[int] = None
-    # approved_by: Optional[Approver] = None  # Nested object
+    approved_by_id: Optional[int] = None
+    approved_by: Optional[Approver] = None  # Nested object
 
     class Config:
         from_attributes = True
 
 
 # ✅ Add approved_by_id in this schema
+# class LeaveList(BaseModel):
+#     id: int
+#     start_date: datetime
+#     end_date: datetime
+#     leave_type: LeaveType
+#     status: LeaveStatus
+#     employee_id: int
+#     approved_by_id: Optional[int] = None  # ✅ Added line
+
+#     class Config:
+#         from_attributes = True
+
+
+# class LeaveListResponse(BaseModel):
+#     count: int
+#     data: list[LeaveList]
+    
+class Approver(BaseModel):
+    id: int
+    username: str  # Or "name", depending on your User model
+
+    class Config:
+        from_attributes = True
+
 class LeaveList(BaseModel):
     id: int
     start_date: datetime
@@ -138,16 +174,16 @@ class LeaveList(BaseModel):
     leave_type: LeaveType
     status: LeaveStatus
     employee_id: int
-    approved_by_id: Optional[int] = None  # ✅ Added line
+    approved_by_id: Optional[int] = None
+    approved_by: Optional[Approver] = None  # ✅ Add this line to show approver's name
 
     class Config:
         from_attributes = True
 
-
 class LeaveListResponse(BaseModel):
     count: int
     data: list[LeaveList]
-    
+
 
 class LeaveListResult(BaseModel):
     count: int

@@ -5,7 +5,7 @@ from typing import List, Any
 from app.dependencies.permission import permission_required, require
 from .. import database, schemas, models, oauth2
 from app.utils import paginate_data, filter_leave
-from app.schemas.leave import LeaveList, LeaveStatus,MyLeaveListResponse, LeaveListResponse, LeaveType
+from app.schemas.leave import LeaveList, LeaveStatus,MyLeaveListResponse, LeaveListResponse, LeaveType, CreateLeaveResponse
 from datetime import datetime
 router = APIRouter(
     prefix="/leaves",
@@ -13,8 +13,10 @@ router = APIRouter(
 )
 
 # ✅ GET: All Leaves (with filtering & pagination)
-# @router.get("/", response_model=schemas.LeaveListResponse, dependencies=[Depends(require("read_leave"))])
+
+# @router.get("/", response_model=schemas.LeaveListResponse, dependencies=[require("read_leave")])
 @router.get("/", response_model=schemas.LeaveListResponse, dependencies=[require("read_leave")])
+
 
 def get_leaves(
     request: Request,
@@ -44,7 +46,7 @@ def get_leaves(
 
 
 # ✅ POST: Create Leave
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.LeaveResponse, dependencies=[require("create_leave")])
+@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.CreateLeaveResponse, dependencies=[require("create_leave")])
 def create_leave(
     leave_data: schemas.LeaveCreate,
     db: Session = Depends(database.get_db),
