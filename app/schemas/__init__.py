@@ -83,6 +83,16 @@ from .role import (
     RoleListResponse
 )
 
+from .notification import (
+    NotificationBase,
+    NotificationCreate,
+    NotificationUpdate,
+    Notification,
+    NotificationResponse,
+    PaginatedNotifications,
+    NotificationListResponse
+)
+
 # define what will be exported on `from schemas import *`
 __all__ = [
     'UserBase', 'UserCreate', 'LoginRequest', 'UserUpdate', 'UserOut',
@@ -98,6 +108,7 @@ __all__ = [
     'LeaveListResult', 'MyLeaveListResponse',   
     'PermissionBase', 'PermissionCreate' ,'PermissionUpdate','Permission', 'PaginatedPermissions', 'PermissionListResponse',
     'RoleBase', 'RoleCreate', 'RoleUpdate', 'Role', 'PaginatedRoles', 'RoleListResponse',
+    'NotificationBase', 'NotificationCreate', 'NotificationUpdate', 'Notification', 'NotificationResponse', 'PaginatedNotifications', 'NotificationListResponse',
 
 ]
 

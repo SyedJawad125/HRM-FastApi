@@ -7,8 +7,7 @@ import enum
 
 class LeaveStatus(str, enum.Enum):
     PENDING = "pending"
-    APPROVED = "approved"   , 
-
+    APPROVED = "approved"
     REJECTED = "rejected"
 
 class LeaveType(str, enum.Enum):
@@ -37,7 +36,10 @@ class Leave(Base):
 
     # Relationships
     employee = relationship("User", foreign_keys=[employee_id], backref="leaves_requested")
-    approved_by = relationship("User", foreign_keys=[approved_by_id], backref="leaves_approved") 
+    approved_by = relationship("User", foreign_keys=[approved_by_id], backref="leaves_approved")
+    
+    # Add notifications relationship
+    notifications = relationship("Notification", back_populates="leave") 
 
     
 

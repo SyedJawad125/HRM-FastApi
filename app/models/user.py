@@ -52,5 +52,7 @@ class User(Base):
     created_permissions = relationship("Permission", back_populates="creator")
     created_ranks = relationship("Rank", back_populates="creator")
 
-   # ✅ Add this to fix permission loading
+    # Add notifications relationship
+    notifications = relationship("Notification", back_populates="user", foreign_keys="Notification.user_id")
+
     permissions = relationship("Permission",secondary=user_permission,back_populates="users")
