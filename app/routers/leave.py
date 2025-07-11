@@ -155,12 +155,13 @@ def get_leave(
 
 from fastapi import BackgroundTasks
 from app.utils import send_email_notification
+import os
 
 @router.patch("/{id}", response_model=schemas.LeaveResponse, dependencies=[require("update_leave")])
 def update_leave(
     id: int,
     updated_data: schemas.LeaveUpdate,
-    background_tasks: BackgroundTasks,  # ✅ FIXED: Added missing comma
+    background_tasks: BackgroundTasks,
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(oauth2.get_current_user),
 ):
@@ -183,7 +184,7 @@ def update_leave(
         db.commit()
         db.refresh(leave)
 
-        # ✅ Send email notification in background
+        # ✅ Send email to the employee
         if leave.employee and leave.employee.email:
             background_tasks.add_task(
                 send_email_notification,
@@ -191,6 +192,22 @@ def update_leave(
                 subject="Leave Request Status Updated",
                 message=f"Your leave request has been {leave.status.upper()}."
             )
+
+        # ✅ Notify admin or HR (email from env or hardcoded)
+        admin_email = os.getenv("ADMIN_EMAIL", "admin_hr@example.com")  # or your own email
+        admin_message = (
+            f"Manager {current_user.username} has {leave.status.upper()} a leave request.\n"
+            f"Employee ID: {leave.employee_id}\n"
+            f"Leave Type: {leave.leave_type}\n"
+            f"From: {leave.start_date.strftime('%Y-%m-%d')} To: {leave.end_date.strftime('%Y-%m-%d')}"
+        )
+
+        background_tasks.add_task(
+            send_email_notification,
+            to_email=admin_email,
+            subject="Leave Request Reviewed",
+            message=admin_message
+        )
 
         return leave
 
@@ -221,6 +238,51 @@ def delete_leave(
     return {"message": "Leave request deleted successfully"}
 
 
+# Patch Api code for send Email to Employee Only
+
+# from fastapi import BackgroundTasks
+# from app.utils import send_email_notification
+
+# @router.patch("/{id}", response_model=schemas.LeaveResponse, dependencies=[require("update_leave")])
+# def update_leave(
+#     id: int,
+#     updated_data: schemas.LeaveUpdate,
+#     background_tasks: BackgroundTasks,  # ✅ FIXED: Added missing comma
+#     db: Session = Depends(database.get_db),
+#     current_user: models.User = Depends(oauth2.get_current_user),
+# ):
+#     try:
+#         leave = db.query(models.Leave).filter(models.Leave.id == id).first()
+
+#         if not leave:
+#             raise HTTPException(status_code=404, detail=f"Leave with ID {id} not found")
+
+#         if LeaveStatus(leave.status) != LeaveStatus.PENDING:
+#             raise HTTPException(status_code=400, detail="Only pending leaves can be updated")
+
+#         update_values = updated_data.model_dump(exclude_unset=True)
+#         update_values['approved_by_id'] = current_user.id
+#         update_values['updated_at'] = datetime.utcnow()
+
+#         for key, value in update_values.items():
+#             setattr(leave, key, value)
+
+#         db.commit()
+#         db.refresh(leave)
+
+#         # ✅ Send email notification in background
+#         if leave.employee and leave.employee.email:
+#             background_tasks.add_task(
+#                 send_email_notification,
+#                 to_email=leave.employee.email,
+#                 subject="Leave Request Status Updated",
+#                 message=f"Your leave request has been {leave.status.upper()}."
+#             )
+
+#         return leave
+
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Error updating leave: {str(e)}")
 
 
 # ✅ GET: All Leaves (with filtering & pagination)
