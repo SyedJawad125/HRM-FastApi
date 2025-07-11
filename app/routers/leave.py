@@ -12,35 +12,6 @@ router = APIRouter(
     tags=['Leaves']
 )
 
-# ✅ GET: All Leaves (with filtering & pagination)
-
-# @router.get("/", response_model=schemas.LeaveListResponse, dependencies=[require("read_leave")])
-# @router.get("/", response_model=schemas.LeaveListResponse, dependencies=[require("read_leave")])
-# def get_leaves(
-#     request: Request,
-#     db: Session = Depends(database.get_db),
-#     current_user: models.User = Depends(oauth2.get_current_user),
-# ):
-#     try:
-#         query = db.query(models.Leave)
-#         # query = filter_leave(request.query_params, query)
-#         query = filter_leave(dict(request.query_params), query)
-
-#         all_data = query.all()
-#         paginated_data, count = paginate_data(all_data, request)
-
-#         # ✅ Use Pydantic model for serialization
-#         serialized_data = [schemas.LeaveList.from_orm(leave) for leave in paginated_data]
-
-       
-
-#         return {
-#             "count": count,
-#             "data": serialized_data
-#         }
-
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
 
 from sqlalchemy.orm import joinedload
 
@@ -203,6 +174,36 @@ def delete_leave(
 
 
 
+
+# ✅ GET: All Leaves (with filtering & pagination)
+
+# @router.get("/", response_model=schemas.LeaveListResponse, dependencies=[require("read_leave")])
+# @router.get("/", response_model=schemas.LeaveListResponse, dependencies=[require("read_leave")])
+# def get_leaves(
+#     request: Request,
+#     db: Session = Depends(database.get_db),
+#     current_user: models.User = Depends(oauth2.get_current_user),
+# ):
+#     try:
+#         query = db.query(models.Leave)
+#         # query = filter_leave(request.query_params, query)
+#         query = filter_leave(dict(request.query_params), query)
+
+#         all_data = query.all()
+#         paginated_data, count = paginate_data(all_data, request)
+
+#         # ✅ Use Pydantic model for serialization
+#         serialized_data = [schemas.LeaveList.from_orm(leave) for leave in paginated_data]
+
+       
+
+#         return {
+#             "count": count,
+#             "data": serialized_data
+#         }
+
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
 
 
