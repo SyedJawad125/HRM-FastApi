@@ -115,12 +115,54 @@ def get_leave(
 
 # ✅ PATCH: Update Leave (e.g. Approve/Reject)
 
+# @router.patch("/{id}", response_model=schemas.LeaveResponse, dependencies=[require("update_leave")])
+# def update_leave(
+#     id: int,
+#     updated_data: schemas.LeaveUpdate,
+#     db: Session = Depends(database.get_db),
+#     current_user: models.User = Depends(oauth2.get_current_user)
+# ):
+#     try:
+#         leave = db.query(models.Leave).filter(models.Leave.id == id).first()
+
+#         if not leave:
+#             raise HTTPException(status_code=404, detail=f"Leave with ID {id} not found")
+
+#         # Allow updates only if leave is still pending
+#         if LeaveStatus(leave.status) != LeaveStatus.PENDING:
+#             raise HTTPException(status_code=400, detail="Only pending leaves can be updated")
+
+#         # Extract fields from payload (excluding those not provided)
+#         update_values = updated_data.model_dump(exclude_unset=True)
+
+#         # Force setting the approver
+#         update_values['approved_by_id'] = current_user.id
+#         update_values['updated_at'] = datetime.utcnow()
+
+#         # Update model fields
+#         for key, value in update_values.items():
+#             setattr(leave, key, value)
+
+#         db.commit()
+#         db.refresh(leave)
+
+#         return leave
+
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"Error updating leave: {str(e)}")
+
+
+
+from fastapi import BackgroundTasks
+from app.utils import send_email_notification
+
 @router.patch("/{id}", response_model=schemas.LeaveResponse, dependencies=[require("update_leave")])
 def update_leave(
     id: int,
     updated_data: schemas.LeaveUpdate,
+    background_tasks: BackgroundTasks,  # ✅ FIXED: Added missing comma
     db: Session = Depends(database.get_db),
-    current_user: models.User = Depends(oauth2.get_current_user)
+    current_user: models.User = Depends(oauth2.get_current_user),
 ):
     try:
         leave = db.query(models.Leave).filter(models.Leave.id == id).first()
@@ -128,28 +170,34 @@ def update_leave(
         if not leave:
             raise HTTPException(status_code=404, detail=f"Leave with ID {id} not found")
 
-        # Allow updates only if leave is still pending
         if LeaveStatus(leave.status) != LeaveStatus.PENDING:
             raise HTTPException(status_code=400, detail="Only pending leaves can be updated")
 
-        # Extract fields from payload (excluding those not provided)
         update_values = updated_data.model_dump(exclude_unset=True)
-
-        # Force setting the approver
         update_values['approved_by_id'] = current_user.id
         update_values['updated_at'] = datetime.utcnow()
 
-        # Update model fields
         for key, value in update_values.items():
             setattr(leave, key, value)
 
         db.commit()
         db.refresh(leave)
 
+        # ✅ Send email notification in background
+        if leave.employee and leave.employee.email:
+            background_tasks.add_task(
+                send_email_notification,
+                to_email=leave.employee.email,
+                subject="Leave Request Status Updated",
+                message=f"Your leave request has been {leave.status.upper()}."
+            )
+
         return leave
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating leave: {str(e)}")
+
+
 
 
 # ✅ DELETE: Delete Leave
