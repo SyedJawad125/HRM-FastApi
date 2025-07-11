@@ -7,7 +7,49 @@ from .database import engine, Base
 from .routers import employee, department, auth, user, role, permission, rank, attendance, timesheet, leave             
 from .models import User, Department  # All models, if needed
 
-app = FastAPI()
+app = FastAPI(
+    title="HRM System",
+    version="1.0.0",
+    description="An API for managing HRM features",
+    openapi_tags=[
+        {
+            "name": "Departments",
+            "description": "Operations related to leave creation, approval, and management"
+        },
+        {
+            "name": "Employees",
+            "description": "Employee profile management"
+        },
+        {
+            "name": "Users",
+            "description": "User login and registration"
+        },
+        {
+            "name": "Ranks",
+            "description": "Rank profile management"
+        },
+        {
+            "name": "Roles",
+            "description": "Roles profile management"
+        },
+        {
+            "name": "Permissions",
+            "description": "Permissions profile management"
+        },
+        {
+            "name": "Attendances",
+            "description": "Attendances profile management"
+        },
+        {
+            "name": "Timesheets",
+            "description": "Timesheets profile management"
+        },
+        {
+            "name": "Leaves",
+            "description": "Leaves profile management"
+        },
+    ]
+)
 
 # Middleware
 app.add_middleware(
@@ -37,3 +79,4 @@ def root():
 @app.get("/ping")
 async def health_check():
     return {"status": "healthy"}
+
