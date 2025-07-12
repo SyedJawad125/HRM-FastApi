@@ -192,25 +192,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# def send_email_notification(to_email: str, subject: str, message: str):
-#     sender_email = os.getenv("EMAIL_USER", "default@gmail.com")
-#     sender_password = os.getenv("EMAIL_PASSWORD", "")
-#     email_host = os.getenv("EMAIL_HOST", "smtp.gmail.com")
-#     email_port = int(os.getenv("EMAIL_PORT", 465))
-
-#     msg = MIMEText(message)
-#     msg["Subject"] = subject
-#     msg["From"] = sender_email
-#     msg["To"] = to_email
-
-#     try:
-#         with smtplib.SMTP_SSL(email_host, email_port) as server:
-#             server.login(sender_email, sender_password)
-#             server.send_message(msg)
-#         print(f"Email sent to {to_email}")
-#     except Exception as e:
-#         print("Failed to send email:", e)
-
 def send_email_notification(to_email: str, subject: str, message: str):
     sender_email = os.getenv("EMAIL_USER", "default@gmail.com")
     sender_password = os.getenv("EMAIL_PASSWORD", "")
