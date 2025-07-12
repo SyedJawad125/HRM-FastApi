@@ -191,10 +191,14 @@ def get_leave(
 #         )
 #         db.add(employee_notification)
 
-#         # Create notification for HR/Admin
-#         admin_users = db.query(models.User).join(models.Role).filter(
+        
+#         admin_users = db.query(models.User).join(
+#             models.Role,
+#             models.User.role_id == models.Role.id
+#         ).filter(
 #             models.Role.name.in_(["HR Manager", "Admin", "Super Admin"])
 #         ).all()
+
 
 #         for admin in admin_users:
 #             admin_notification = models.Notification(
@@ -245,10 +249,10 @@ def get_leave(
 #         raise HTTPException(status_code=500, detail=f"Error updating leave: {str(e)}")
 
 
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException, Depends, BackgroundTasks
 from sqlalchemy.orm import Session
 from app import models, schemas, database, oauth2
-from app.utils import send_email_notification  # Your working sync version
+from app.utils import send_email_notification
 from app.schemas.leave import LeaveStatus
 from app.dependencies.permission import require
 from datetime import datetime
@@ -258,6 +262,7 @@ import os
 def update_leave(
     id: int,
     updated_data: schemas.LeaveUpdate,
+    background_tasks: BackgroundTasks,  # Add this back
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(oauth2.get_current_user),
 ):
@@ -277,7 +282,7 @@ def update_leave(
         for key, value in update_values.items():
             setattr(leave, key, value)
 
-        # ✅ Add notifications
+        # Add notifications
         db.add(models.Notification(
             title="Leave Request Updated",
             message=f"Your leave request has been {leave.status.upper()}.",
@@ -309,9 +314,10 @@ def update_leave(
         db.commit()
         db.refresh(leave)
 
-        # ✅ Email directly without background task
+        # Send email notifications in background
         if leave.employee and leave.employee.email:
-            send_email_notification(
+            background_tasks.add_task(
+                send_email_notification,
                 to_email=leave.employee.email,
                 subject="Leave Request Status Updated",
                 message=f"Your leave request has been {leave.status.upper()}."
@@ -324,7 +330,9 @@ def update_leave(
             f"Leave Type: {leave.leave_type}\n"
             f"From: {leave.start_date.strftime('%Y-%m-%d')} To: {leave.end_date.strftime('%Y-%m-%d')}"
         )
-        send_email_notification(
+        
+        background_tasks.add_task(
+            send_email_notification,
             to_email=admin_email,
             subject="Leave Request Reviewed",
             message=admin_message
