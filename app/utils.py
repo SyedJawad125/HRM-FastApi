@@ -233,6 +233,18 @@ def send_email_notification(to_email: str, subject: str, message: str):
     except Exception as e:
         print("[ERROR] Failed to send email:", str(e))
 
+import os
+from datetime import datetime
+
+LOG_FILE_PATH = "app/logs/leave_actions.log"  # You can customize the path
+
+def log_action(message: str):
+    print("📄 Writing log:", message)  # TEMP
+    os.makedirs(os.path.dirname(LOG_FILE_PATH), exist_ok=True)
+    with open(LOG_FILE_PATH, "a") as log_file:
+        timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+        log_file.write(f"[{timestamp}] {message}\n")
+
 
 # EMAIL_HOST = "smtp.gmail.com"
 # EMAIL_USE_SSL = True

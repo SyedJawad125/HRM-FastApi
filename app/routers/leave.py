@@ -255,6 +255,7 @@ from app import models, schemas, database, oauth2
 from app.utils import send_email_notification
 from app.schemas.leave import LeaveStatus
 from app.dependencies.permission import require
+from app.utils import log_action  # ✅ NEW
 from datetime import datetime
 import os
 
@@ -337,9 +338,16 @@ def update_leave(
             subject="Leave Request Reviewed",
             message=admin_message
         )
+        # ✅ Logging in background
+        log_msg = (
+            f"User {current_user.username} ({current_user.id}) "
+            f"{leave.status.upper()} leave ID {leave.id} for employee {leave.employee_id}"
+        )
+        background_tasks.add_task(log_action, log_msg)
+
 
         return leave
-
+        
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating leave: {str(e)}")
 
