@@ -232,3 +232,22 @@ def log_action(message: str):
 # EMAIL_PORT = 465
 # EMAIL_HOST_USER = "syedjawadali92@gmail.com"
 # EMAIL_HOST_PASSWORD = "ctpgxfclwyucweni"
+
+
+# app/utils/redis_client.py
+
+import redis
+from redis.exceptions import RedisError
+import os
+
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+
+try:
+    redis_client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
+    redis_client.ping()  # Try connecting to Redis
+    print("✅ Redis connected successfully.")
+except RedisError as e:
+    print("❌ Redis connection failed:", e)
+    redis_client = None
+

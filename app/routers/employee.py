@@ -5,6 +5,8 @@ from .. import database, schemas, models, oauth2
 from app.schemas.employee import Employee, EmployeeCreate  # Explicit imports
 from app.utils import paginate_data, create_response, filter_employees
 from app.dependencies.permission import permission_required, require
+from app.utils import redis_client
+import os, json
 
 router = APIRouter(
     prefix="/employees",
@@ -12,6 +14,48 @@ router = APIRouter(
 )
 
 # @router.get("/", response_model=List[schemas.Employee])
+# @router.get("/", response_model=schemas.EmployeeListResponse, dependencies=[require("read_employee")])
+# def get_employees(
+#     request: Request,
+#     db: Session = Depends(database.get_db),
+#     current_user: models.User = Depends(oauth2.get_current_user),
+# ):
+#     try:
+#         query = db.query(models.Employee)
+#         query = filter_employees(request.query_params, query)
+#         data = query.all()
+#         paginated_data, count = paginate_data(data, request)
+
+#         # ✅ Convert ORM to Pydantic
+#         serialized_data = [schemas.Employee.from_orm(dept) for dept in paginated_data]
+
+#         response_data = {
+#             "count": count,
+#             "data": serialized_data
+#         }
+
+#         return {
+#             "status": "SUCCESSFUL",
+#             "result": response_data
+#         }
+
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+# redis-server.exe redis.windows.conf
+# redis-cli.exe   ,     C:\Program Files\Redis
+
+
+
+from fastapi import APIRouter, Request, Depends, HTTPException
+from sqlalchemy.orm import Session
+import json, os
+
+from app import models, schemas, database, oauth2
+from app.utils import redis_client  # ✅ Import redis_client safely
+
+router = APIRouter()
+
 @router.get("/", response_model=schemas.EmployeeListResponse, dependencies=[require("read_employee")])
 def get_employees(
     request: Request,
@@ -19,26 +63,66 @@ def get_employees(
     current_user: models.User = Depends(oauth2.get_current_user),
 ):
     try:
+        # ✅ Create cache key using query params
+        cache_key = f"employees_list:{str(request.query_params)}"
+
+        # ✅ Try Redis cache if client exists
+        if redis_client:
+            cached = redis_client.get(cache_key)
+            if cached:
+                print("✅ Cache hit")
+                cached_data = json.loads(cached)
+                serialized_data = [
+                    schemas.Employee(**emp) for emp in cached_data["data"]
+                ]
+                return {
+                    "status": "SUCCESSFUL",
+                    "result": {
+                        "count": cached_data["count"],
+                        "data": serialized_data
+                    }
+                }
+
+        # ✅ DB Query
         query = db.query(models.Employee)
         query = filter_employees(request.query_params, query)
         data = query.all()
         paginated_data, count = paginate_data(data, request)
 
         # ✅ Convert ORM to Pydantic
-        serialized_data = [schemas.Employee.from_orm(dept) for dept in paginated_data]
+        serialized_data = [schemas.Employee.from_orm(emp) for emp in paginated_data]
 
+        # ✅ Prepare response
         response_data = {
-            "count": count,
-            "data": serialized_data
+            "status": "SUCCESSFUL",
+            "result": {
+                "count": count,
+                "data": serialized_data
+            }
         }
 
-        return {
-            "status": "SUCCESSFUL",
-            "result": response_data
-        }
+        # ✅ Cache response if Redis available
+        if redis_client:
+            # Safely get TTL from env (ignore inline comments)
+            ttl_str = os.getenv("REDIS_CACHE_TTL", "300").split()[0].strip()
+            ttl = int(ttl_str)
+            redis_client.setex(
+                cache_key,
+                ttl,
+                json.dumps({
+                    "count": count,
+                    "data": [emp.model_dump() for emp in serialized_data]
+                    }, default=str) 
+                
+            )
+
+        return response_data
 
     except Exception as e:
+        print("❌ Error in get_employees:", e)
         raise HTTPException(status_code=500, detail=str(e))
+
+
 
 @router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Employee, dependencies=[require("create_employee")])
 def create_employee(
