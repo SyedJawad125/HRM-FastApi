@@ -209,7 +209,7 @@ import re
 
 router = APIRouter(prefix="/departments",
     tags=['Departments'])
-
+# Url is http://127.0.0.1:8000/departments/upload-departments
 # ✅ Helper validation functions
 def is_valid_name(value):
     return (
@@ -290,7 +290,7 @@ import pandas as pd
 
 # router = APIRouter(prefix="/departments",
 #     tags=['Departments'])
-
+# Url is ,   http://127.0.0.1:8000/departments/download-departments?format=csv
 @router.get("/download-departments")
 def download_departments(
     format: str = Query("csv", description="File format (csv or xlsx)"),
