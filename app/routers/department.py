@@ -1,12 +1,38 @@
-from fastapi import APIRouter, Depends, status, Request, HTTPException
+# from fastapi import APIRouter, Depends, status, Request, HTTPException
+# from sqlalchemy.orm import Session
+# from typing import List, Optional, Any
+
+# from app.dependencies.permission import permission_required, require
+# from .. import database, schemas, models, oauth2
+# from app.utils import paginate_data, create_response, filter_departments
+# from fastapi.responses import JSONResponse
+# # from app.schemas import DepartmentListResponse
+# from fastapi import APIRouter, Depends, HTTPException, Query
+# from fastapi.responses import StreamingResponse
+# from sqlalchemy.orm import Session
+# from io import StringIO, BytesIO
+# import pandas as pd
+
+# from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+# from sqlalchemy.orm import Session
+# import pandas as pd
+# from app import database, models
+# import re
+
+
+from fastapi import APIRouter, Depends, status, Request, HTTPException, Query, UploadFile, File
+from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from typing import List, Optional, Any
+from io import StringIO, BytesIO
+import pandas as pd
+import re
 
+from app import database, models
+from .. import schemas, oauth2
 from app.dependencies.permission import permission_required, require
-from .. import database, schemas, models, oauth2
 from app.utils import paginate_data, create_response, filter_departments
-from fastapi.responses import JSONResponse
-# from app.schemas import DepartmentListResponse
+
 
 
 router = APIRouter(
@@ -75,11 +101,6 @@ def create_department(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-from fastapi import APIRouter, Depends, HTTPException, Query
-from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
-from io import StringIO, BytesIO
-import pandas as pd
 
 # router = APIRouter(prefix="/departments",
 #     tags=['Departments'])
@@ -210,14 +231,6 @@ def delete_department(
 
 
 
-
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-from sqlalchemy.orm import Session
-import pandas as pd
-from app import database, models
-import re
-
-
 # Url is http://127.0.0.1:8000/departments/upload-departments
 # ✅ Helper validation functions
 def is_valid_name(value):
@@ -281,9 +294,6 @@ async def upload_departments(file: UploadFile = File(...), db: Session = Depends
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
-
-
-
 
 
 @router.get("/test")
