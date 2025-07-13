@@ -205,8 +205,25 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from sqlalchemy.orm import Session
 import pandas as pd
 from app import database, models
+import re
 
-router = APIRouter()
+router = APIRouter(prefix="/departments",
+    tags=['Departments'])
+
+# ✅ Helper validation functions
+def is_valid_name(value):
+    return (
+        isinstance(value, str) and
+        value.strip() and
+        re.match(r'^[a-zA-Z\s]+$', value.strip())  # only letters and spaces
+    )
+
+def is_valid_location(value):
+    return (
+        isinstance(value, str) and
+        value.strip() and
+        not value.strip().isdigit()  # reject if only digits
+    )
 
 @router.post("/upload-departments")
 async def upload_departments(file: UploadFile = File(...), db: Session = Depends(database.get_db)):
@@ -228,13 +245,14 @@ async def upload_departments(file: UploadFile = File(...), db: Session = Depends
                 name = row.get("name")
                 location = row.get("location")
 
-                if not name or not location or str(name).strip() == "" or str(location).strip() == "":
-                    skipped_rows.append(i + 2)  # Excel rows start at 1 + header = +2
+                # ✅ Apply full validation
+                if not is_valid_name(name) or not is_valid_location(location):
+                    skipped_rows.append(i + 2)  # +2: zero-based + header
                     continue
 
                 department = models.Department(
-                    name=name,
-                    location=location
+                    name=name.strip(),
+                    location=location.strip()
                 )
                 db.add(department)
                 added_count += 1
@@ -246,13 +264,17 @@ async def upload_departments(file: UploadFile = File(...), db: Session = Depends
         db.commit()
 
         return {
-            "status": "PARTIAL_SUCCESS" if skipped_rows else "SUCCESS",
-            "message": f"{added_count} departments added.",
-            "skipped_rows": skipped_rows or None
-        }
+                "status": "PARTIAL_SUCCESS" if skipped_rows else "SUCCESS",
+                "message": f"{added_count} departments added.",
+                "Total skipped Rows": len(skipped_rows) if skipped_rows else 0,
+                "skipped_rows": skipped_rows or None
+}
+
+        
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
 
 
 
