@@ -56,11 +56,7 @@ def create_department(
     current_user: models.User = Depends(oauth2.get_current_user)
 ) -> Any:
     try:
-        # if not current_user.is_admin:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_403_FORBIDDEN,
-        #         detail="Only admin users can create departments"
-        #     )
+        
 
         department_data = department.dict()
         department_data["created_by_user_id"] = current_user.id  # ✅ Correct field name
@@ -70,11 +66,7 @@ def create_department(
         db.commit()
         db.refresh(new_department)
 
-        # return {
-        #     "status": "SUCCESSFUL",
-        #     "data": schemas.Department.from_orm(new_department).dict(),
-        #     "message": "Department created successfully"
-        # }
+        
         return new_department
 
     except HTTPException as he:
@@ -101,11 +93,6 @@ def patch_update_department(
     current_user: models.User = Depends(oauth2.get_current_user)
 ):
     try:
-        # if not current_user.is_admin:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_403_FORBIDDEN,
-        #         detail="Only admin users can update departments"
-        #     )
 
         department_instance = db.query(models.Department).filter(models.Department.id == id).first()
 
@@ -160,46 +147,6 @@ def delete_department(
 
 
 
-# from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
-# from sqlalchemy.orm import Session
-# import pandas as pd
-# from app import database, models
-
-# router = APIRouter()
-
-# @router.post("/upload-departments")
-# async def upload_departments(file: UploadFile = File(...), db: Session = Depends(database.get_db)):
-#     try:
-#         # ✅ Load the Excel or CSV file
-#         filename = file.filename or ""
-#         if filename.endswith(".xlsx"):
-#             df = pd.read_excel(file.file)
-#         elif filename.endswith(".csv"):
-#             df = pd.read_csv(file.file)
-#         else:
-#             raise HTTPException(status_code=400, detail="Only .xlsx and .csv files are supported.")
-
-#         added_count = 0
-
-#         for _, row in df.iterrows():
-#             # Optional: check for duplicates if needed
-#             # existing = db.query(models.Department).filter_by(name=row["name"], location=row["location"]).first()
-#             # if existing:
-#             #     continue
-
-#             department = models.Department(
-#                 name=row["name"],
-#                 location=row["location"]
-#             )
-#             db.add(department)
-#             added_count += 1
-
-#         db.commit()
-#         return {"status": "SUCCESS", "message": f"{added_count} new departments added."}
-
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from sqlalchemy.orm import Session
@@ -225,7 +172,7 @@ def is_valid_location(value):
         not value.strip().isdigit()  # reject if only digits
     )
 
-@router.post("/upload-departments")
+@router.post("/upload-departments", dependencies=[require("create_department")])
 async def upload_departments(file: UploadFile = File(...), db: Session = Depends(database.get_db)):
     try:
         filename = file.filename or ""
@@ -291,7 +238,7 @@ import pandas as pd
 # router = APIRouter(prefix="/departments",
 #     tags=['Departments'])
 # Url is ,   http://127.0.0.1:8000/departments/download-departments?format=csv
-@router.get("/download-departments")
+@router.get("/download-departments", dependencies=[require("read_department")])
 def download_departments(
     format: str = Query("csv", description="File format (csv or xlsx)"),
     download: bool = Query(False, description="Force file download"),
