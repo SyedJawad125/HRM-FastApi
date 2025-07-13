@@ -156,3 +156,107 @@ def delete_department(
     db.commit()
 
     return {"message": "Department deleted successfully"}
+
+
+
+
+# from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+# from sqlalchemy.orm import Session
+# import pandas as pd
+# from app import database, models
+
+# router = APIRouter()
+
+# @router.post("/upload-departments")
+# async def upload_departments(file: UploadFile = File(...), db: Session = Depends(database.get_db)):
+#     try:
+#         # ✅ Load the Excel or CSV file
+#         filename = file.filename or ""
+#         if filename.endswith(".xlsx"):
+#             df = pd.read_excel(file.file)
+#         elif filename.endswith(".csv"):
+#             df = pd.read_csv(file.file)
+#         else:
+#             raise HTTPException(status_code=400, detail="Only .xlsx and .csv files are supported.")
+
+#         added_count = 0
+
+#         for _, row in df.iterrows():
+#             # Optional: check for duplicates if needed
+#             # existing = db.query(models.Department).filter_by(name=row["name"], location=row["location"]).first()
+#             # if existing:
+#             #     continue
+
+#             department = models.Department(
+#                 name=row["name"],
+#                 location=row["location"]
+#             )
+#             db.add(department)
+#             added_count += 1
+
+#         db.commit()
+#         return {"status": "SUCCESS", "message": f"{added_count} new departments added."}
+
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from sqlalchemy.orm import Session
+import pandas as pd
+from app import database, models
+
+router = APIRouter()
+
+@router.post("/upload-departments")
+async def upload_departments(file: UploadFile = File(...), db: Session = Depends(database.get_db)):
+    try:
+        filename = file.filename or ""
+        if filename.endswith(".xlsx"):
+            df = pd.read_excel(file.file)
+        elif filename.endswith(".csv"):
+            df = pd.read_csv(file.file)
+        else:
+            raise HTTPException(status_code=400, detail="Only .xlsx and .csv files are supported.")
+
+        added_count = 0
+        skipped_rows = []
+
+        for i in range(len(df)):
+            try:
+                row = df.iloc[i]
+                name = row.get("name")
+                location = row.get("location")
+
+                if not name or not location or str(name).strip() == "" or str(location).strip() == "":
+                    skipped_rows.append(i + 2)  # Excel rows start at 1 + header = +2
+                    continue
+
+                department = models.Department(
+                    name=name,
+                    location=location
+                )
+                db.add(department)
+                added_count += 1
+
+            except Exception:
+                skipped_rows.append(i + 2)
+                continue
+
+        db.commit()
+
+        return {
+            "status": "PARTIAL_SUCCESS" if skipped_rows else "SUCCESS",
+            "message": f"{added_count} departments added.",
+            "skipped_rows": skipped_rows or None
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+
+
+
+@router.get("/test")
+def test_route():
+    return {"message": "Employee router is working"}

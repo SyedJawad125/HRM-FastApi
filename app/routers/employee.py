@@ -124,35 +124,42 @@ def get_employees(
 
 
 
-@router.post("/", status_code=status.HTTP_201_CREATED, response_model=schemas.Employee, dependencies=[require("create_employee")])
+@router.post("/", 
+            status_code=status.HTTP_201_CREATED, 
+            response_model=schemas.Employee, 
+            dependencies=[require("create_employee")])
 def create_employee(
     employee: schemas.EmployeeCreate,
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(oauth2.get_current_user)
-) -> Any:
+):
     try:
-        
+        # Check if email already exists
+        existing = db.query(models.Employee).filter(
+            models.Employee.email == employee.email
+        ).first()
+        if existing:
+            raise HTTPException(
+                status_code=400,
+                detail="Employee with this email already exists"
+            )
 
-        employee_data = employee.dict()
-        # department_data["created_by_user_id"] = current_user.id  # ✅ Correct field name
-
+        employee_data = employee.model_dump()
         new_employee = models.Employee(**employee_data)
         db.add(new_employee)
         db.commit()
         db.refresh(new_employee)
-
-        # return {
-        #     "status": "SUCCESSFUL",
-        #     "data": schemas.Department.from_orm(new_department).dict(),
-        #     "message": "Department created successfully"
-        # }
         return new_employee
 
     except HTTPException as he:
         raise he
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error creating employee: {str(e)}"
+        )
+        
 @router.get("/{id}", response_model=schemas.Employee, dependencies=[require("read_employee")])
 def get_employee(id: int, db: Session = Depends(database.get_db), 
                 current_user: models.User = Depends(oauth2.get_current_user)):
@@ -207,7 +214,6 @@ def delete_employee(
     current_user: models.User = Depends(oauth2.get_current_user),
     _: None = Depends(permission_required(["delete_employee"]))
 ):
-    
 
     employee_query = db.query(models.Employee).filter(models.Employee.id == id)
     employee = employee_query.first()
@@ -226,7 +232,54 @@ def delete_employee(
 
 
 
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, status
+from sqlalchemy.orm import Session
+import pandas as pd
+from app import database, models, oauth2
 
+router = APIRouter()
+
+@router.post("/upload-employees")
+async def upload_employees(file: UploadFile = File(...), db: Session = Depends(database.get_db)):
+    try:
+        # ✅ Load the Excel or CSV file
+        filename = file.filename or ""
+        if filename.endswith(".xlsx"):
+            df = pd.read_excel(file.file)
+        elif filename.endswith(".csv"):
+            df = pd.read_csv(file.file)
+        else:
+            raise HTTPException(status_code=400, detail="Only .xlsx and .csv files are supported.")
+
+        # ✅ Fetch existing emails from DB to prevent duplicates
+        existing_emails = {e.email for e in db.query(models.Employee.email).all()}
+
+        added_count = 0
+
+        for _, row in df.iterrows():
+            if row["email"] in existing_emails:
+                continue  # ❌ Skip duplicate
+            employee = models.Employee(
+                name=row["name"],
+                email=row["email"],
+                position=row.get("position", ""),
+                department=row.get("department", ""),
+                date_of_joining=row.get("date_of_joining")
+            )
+            db.add(employee)
+            added_count += 1
+
+        db.commit()
+        return {"status": "SUCCESS", "message": f"{added_count} new employees added."}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@router.get("/test")
+def test_route():
+    return {"message": "Employee router is working"}
 
 
 

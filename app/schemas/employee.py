@@ -11,6 +11,7 @@ class EmployeeBase(BaseModel):
     job_title: str
     salary: float
     department_id: int
+    rank_id: int  # Add this
 
 class EmployeeCreate(EmployeeBase):
    class Config:
@@ -43,6 +44,7 @@ class EmployeeUpdate(BaseModel):
     job_title: Optional[str] = None
     salary: Optional[float] = None
     department_id: Optional[int] = None
+    rank_id: Optional[int] = None  # Add this to match your model
 
     class Config:
         extra = "forbid"

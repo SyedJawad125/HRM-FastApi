@@ -6,6 +6,7 @@ from app.models import attendance
 from .database import engine, Base
 from .routers import employee, department, auth, user, role, permission, rank, attendance, timesheet, leave, notification
 from .models import User, Department  # All models, if needed
+# from app.routers import employee
 
 app = FastAPI(
     title="HRM System",
@@ -51,8 +52,9 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router)
 app.include_router(user.router)
-app.include_router(employee.router, prefix="/employees", tags=["Employees"])
-app.include_router(department.router)
+# app.include_router(employee.router, prefix="/employees", tags=["Employees"])
+app.include_router(employee.router)
+app.include_router(department.router, prefix="/departments", tags=["Department"])
 app.include_router(role.router)
 app.include_router(permission.router)
 app.include_router(rank.router)
@@ -69,3 +71,6 @@ def root():
 async def health_check():
     return {"status": "healthy"}
 
+@app.get("/test")
+def test():
+    return {"status": "working"}
