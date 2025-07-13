@@ -1,60 +1,44 @@
-from fastapi import APIRouter, Depends, Request, status, HTTPException
+# from fastapi import APIRouter, Depends, Request, status, HTTPException
+# from sqlalchemy.orm import Session
+# from typing import List, Any
+# from .. import database, schemas, models, oauth2
+# from app.schemas.employee import Employee, EmployeeCreate  # Explicit imports
+# from app.utils import paginate_data, create_response, filter_employees
+# from app.dependencies.permission import permission_required, require
+# from app.utils import redis_client
+# import os, json
+
+# from fastapi import APIRouter, Request, Depends, HTTPException
+# from sqlalchemy.orm import Session
+# import json, os
+# from app import models, schemas, database, oauth2
+# from app.utils import redis_client  # ✅ Import redis_client safely
+
+# from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, status
+# from sqlalchemy.orm import Session
+# import pandas as pd
+# from app import database, models, oauth2
+
+# redis-server.exe redis.windows.conf
+# redis-cli.exe   ,     C:\Program Files\Redis
+
+from fastapi import (APIRouter, Depends, Request, status, HTTPException,UploadFile, File)
 from sqlalchemy.orm import Session
 from typing import List, Any
+import os
+import json
+import pandas as pd
+# Local imports
 from .. import database, schemas, models, oauth2
-from app.schemas.employee import Employee, EmployeeCreate  # Explicit imports
-from app.utils import paginate_data, create_response, filter_employees
+from app.schemas.employee import Employee, EmployeeCreate
+from app.utils import (paginate_data, create_response, filter_employees,redis_client)
 from app.dependencies.permission import permission_required, require
-from app.utils import redis_client
-import os, json
 
 router = APIRouter(
     prefix="/employees",
     tags=['Employees']
 )
 
-# @router.get("/", response_model=List[schemas.Employee])
-# @router.get("/", response_model=schemas.EmployeeListResponse, dependencies=[require("read_employee")])
-# def get_employees(
-#     request: Request,
-#     db: Session = Depends(database.get_db),
-#     current_user: models.User = Depends(oauth2.get_current_user),
-# ):
-#     try:
-#         query = db.query(models.Employee)
-#         query = filter_employees(request.query_params, query)
-#         data = query.all()
-#         paginated_data, count = paginate_data(data, request)
-
-#         # ✅ Convert ORM to Pydantic
-#         serialized_data = [schemas.Employee.from_orm(dept) for dept in paginated_data]
-
-#         response_data = {
-#             "count": count,
-#             "data": serialized_data
-#         }
-
-#         return {
-#             "status": "SUCCESSFUL",
-#             "result": response_data
-#         }
-
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# redis-server.exe redis.windows.conf
-# redis-cli.exe   ,     C:\Program Files\Redis
-
-
-
-from fastapi import APIRouter, Request, Depends, HTTPException
-from sqlalchemy.orm import Session
-import json, os
-
-from app import models, schemas, database, oauth2
-from app.utils import redis_client  # ✅ Import redis_client safely
-
-router = APIRouter()
 
 @router.get("/", response_model=schemas.EmployeeListResponse, dependencies=[require("read_employee")])
 def get_employees(
@@ -232,17 +216,10 @@ def delete_employee(
 
 
 
-from fastapi import APIRouter, UploadFile, File, HTTPException, Depends, status
-from sqlalchemy.orm import Session
-import pandas as pd
-from app import database, models, oauth2
-
-router = APIRouter()
-
-@router.post("/upload-employees")
+@router.post("/upload-employees", dependencies=[require("create_employee")])
 async def upload_employees(file: UploadFile = File(...), db: Session = Depends(database.get_db)):
     try:
-        # ✅ Load the Excel or CSV file
+        # Read file
         filename = file.filename or ""
         if filename.endswith(".xlsx"):
             df = pd.read_excel(file.file)
@@ -251,35 +228,100 @@ async def upload_employees(file: UploadFile = File(...), db: Session = Depends(d
         else:
             raise HTTPException(status_code=400, detail="Only .xlsx and .csv files are supported.")
 
-        # ✅ Fetch existing emails from DB to prevent duplicates
-        existing_emails = {e.email for e in db.query(models.Employee.email).all()}
+        # Clean column names (remove spaces)
+        df.columns = df.columns.str.strip()
 
-        added_count = 0
-
-        for _, row in df.iterrows():
-            if row["email"] in existing_emails:
-                continue  # ❌ Skip duplicate
-            employee = models.Employee(
-                name=row["name"],
-                email=row["email"],
-                position=row.get("position", ""),
-                department=row.get("department", ""),
-                date_of_joining=row.get("date_of_joining")
+        # Check required columns
+        required_columns = {
+            "first_name", "last_name", "email", "phone_number", 
+            "hire_date", "job_title", "salary", "department_id", "rank_id"
+        }
+        if not required_columns.issubset(df.columns):
+            missing = required_columns - set(df.columns)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Missing required columns: {missing}"
             )
-            db.add(employee)
-            added_count += 1
+
+        # Process data
+        existing_emails = {e.email for e in db.query(models.Employee.email).all()}
+        added_count = 0
+        skipped_rows = []
+
+        for index, row in df.iterrows():
+            try:
+                # Check for duplicate email
+                if row["email"] in existing_emails:
+                    skipped_rows.append(int(index) + 2)  # +2 for 1-based index + header
+                    continue
+
+                # Validate hire_date
+                hire_date = pd.to_datetime(row["hire_date"], errors='coerce')
+                if pd.isnull(hire_date):
+                    skipped_rows.append(int(index) + 2)
+                    continue
+
+                # Create employee
+                employee = models.Employee(
+                    first_name=str(row["first_name"]),
+                    last_name=str(row["last_name"]),
+                    email=str(row["email"]),
+                    phone_number=str(row["phone_number"]),
+                    hire_date=hire_date.date(),
+                    job_title=str(row["job_title"]),
+                    salary=float(row["salary"]),
+                    department_id=int(row["department_id"]),
+                    rank_id=int(row["rank_id"]),
+                )
+                db.add(employee)
+                added_count += 1
+
+            except Exception as e:
+                skipped_rows.append(int(index) + 2)
 
         db.commit()
-        return {"status": "SUCCESS", "message": f"{added_count} new employees added."}
+
+        return {
+            "status": "PARTIAL_SUCCESS" if skipped_rows else "SUCCESS",
+            "message": f"{added_count} employees added.",
+            "skipped_rows": skipped_rows
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+        
 
-@router.get("/test")
-def test_route():
-    return {"message": "Employee router is working"}
+# @router.get("/", response_model=List[schemas.Employee])
+# @router.get("/", response_model=schemas.EmployeeListResponse, dependencies=[require("read_employee")])
+# def get_employees(
+#     request: Request,
+#     db: Session = Depends(database.get_db),
+#     current_user: models.User = Depends(oauth2.get_current_user),
+# ):
+#     try:
+#         query = db.query(models.Employee)
+#         query = filter_employees(request.query_params, query)
+#         data = query.all()
+#         paginated_data, count = paginate_data(data, request)
+
+#         # ✅ Convert ORM to Pydantic
+#         serialized_data = [schemas.Employee.from_orm(dept) for dept in paginated_data]
+
+#         response_data = {
+#             "count": count,
+#             "data": serialized_data
+#         }
+
+#         return {
+#             "status": "SUCCESSFUL",
+#             "result": response_data
+#         }
+
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
 
 
 

@@ -34,8 +34,6 @@ class EmployeeListResponse(BaseModel):
     result: PaginatedEmployees
 
 class EmployeeUpdate(BaseModel):
-    name: Optional[str] = None
-    location: Optional[str] = None
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     email: Optional[EmailStr] = None
@@ -44,7 +42,7 @@ class EmployeeUpdate(BaseModel):
     job_title: Optional[str] = None
     salary: Optional[float] = None
     department_id: Optional[int] = None
-    rank_id: Optional[int] = None  # Add this to match your model
+    rank_id: Optional[int] = None
 
     class Config:
         extra = "forbid"
