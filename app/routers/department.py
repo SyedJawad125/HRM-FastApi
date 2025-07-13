@@ -277,8 +277,69 @@ async def upload_departments(file: UploadFile = File(...), db: Session = Depends
 
 
 
-
-
 @router.get("/test")
 def test_route():
     return {"message": "Employee router is working"}
+
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
+from sqlalchemy.orm import Session
+from io import StringIO, BytesIO
+import pandas as pd
+
+# router = APIRouter(prefix="/departments",
+#     tags=['Departments'])
+
+@router.get("/download-departments")
+def download_departments(
+    format: str = Query("csv", description="File format (csv or xlsx)"),
+    download: bool = Query(False, description="Force file download"),
+    db: Session = Depends(database.get_db)
+):
+    departments = db.query(models.Department).all()
+    data = [{"id": d.id, "name": d.name, "location": d.location} for d in departments]
+    df = pd.DataFrame(data)
+
+    # CSV Format
+    if format == "csv":
+        output = StringIO()
+        df.to_csv(output, index=False)
+        output.seek(0)
+        
+        headers = {}
+        if download:
+            headers = {
+                "Content-Disposition": "attachment; filename=departments.csv",
+                "Access-Control-Expose-Headers": "Content-Disposition"
+            }
+        
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers=headers
+        )
+
+    # Excel (XLSX) Format
+    elif format == "xlsx":
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine="openpyxl") as writer:
+            df.to_excel(writer, index=False, sheet_name="Departments")
+        output.seek(0)
+        
+        headers = {}
+        if download:
+            headers = {
+                "Content-Disposition": "attachment; filename=departments.xlsx",
+                "Access-Control-Expose-Headers": "Content-Disposition"
+            }
+        
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers=headers
+        )
+
+    # Invalid format
+    else:
+        raise HTTPException(status_code=400, detail="Invalid format. Use 'csv' or 'xlsx'.")
