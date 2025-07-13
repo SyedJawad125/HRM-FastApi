@@ -4,7 +4,7 @@ from pydantic import BaseModel
 # (Already defined)
 class DepartmentBase(BaseModel):
     name: str
-    location: Optional[str] = None
+    location: Optional[str] = None  # Add location if needed
 
 class DepartmentCreate(DepartmentBase):
     class Config:
@@ -12,7 +12,7 @@ class DepartmentCreate(DepartmentBase):
 
 class Department(DepartmentBase):
     id: int
-    created_by_user_id: int
+    created_by_user_id: Optional[int] = None
 
     class Config:
         from_attributes = True

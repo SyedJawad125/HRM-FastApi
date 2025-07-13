@@ -83,7 +83,6 @@ def create_department(
 ) -> Any:
     try:
         
-
         department_data = department.dict()
         department_data["created_by_user_id"] = current_user.id  # ✅ Correct field name
 
