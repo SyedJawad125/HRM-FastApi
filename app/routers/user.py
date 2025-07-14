@@ -132,18 +132,20 @@ def login(user_credentials: schemas.LoginRequest, db: Session = Depends(database
             detail="User has no role assigned"
         )
 
-    # Step 5: Create access token
+    # Step 5: Create access and refresh tokens
     access_token = oauth2.create_access_token(data={"user_id": user.id})
+    refresh_token = oauth2.create_refresh_token(data={"user_id": user.id})
 
     # Step 6: Return full response
     return {
         "message": "Successful",
         "access_token": access_token,
+        "refresh_token": refresh_token,  # Add refresh token to response
         "token_type": "bearer",
         "user_id": user.id,
         "username": user.username,
         "email": user.email,
-        "is_superuser": is_superuser_response,  # ✅ True only if superuser AND no role
+        "is_superuser": is_superuser_response,
         "role_id": user.role.id if user.role else None,
         "role_name": user.role.name if user.role else None,
         "permissions": permissions_dict

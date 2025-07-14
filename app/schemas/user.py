@@ -44,9 +44,11 @@ class UserOut(UserBase):
     class Config:
         from_attributes = True  # Replaces orm_mode in Pydantic v2
 
-class Token(BaseModel):
+class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
 
 class TokenData(BaseModel):
-    id: Optional[str] = None
+    user_id: int | None = None
+    token_type: str | None = None

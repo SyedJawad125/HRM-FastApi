@@ -6,7 +6,8 @@ from .user import (
     UserUpdate,
     UserOut,
     Token,
-    TokenData
+    TokenData,
+    TokenResponse
 )
 
 # employee schemas
@@ -96,7 +97,7 @@ from .notification import (
 # define what will be exported on `from schemas import *`
 __all__ = [
     'UserBase', 'UserCreate', 'LoginRequest', 'UserUpdate', 'UserOut',
-    'Token', 'TokenData',
+    'Token', 'TokenData', 'TokenResponse',
     'Employee', 'EmployeeCreate','PaginatedEmployees','EmployeeListResponse','EmployeeUpdate',
     'DepartmentBase', 'DepartmentCreate', 'Department', 'DepartmentUpdate',
     'PaginatedDepartments', 'DepartmentListResponse',
