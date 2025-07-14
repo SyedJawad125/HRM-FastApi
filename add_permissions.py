@@ -33,15 +33,7 @@ permissions = [
     {"name": "Update Notification", "code": "update_notification", "module_name": "Notification", "description": "User can update Notification"},
     {"name": "Delete Notification", "code": "delete_notification", "module_name": "Notification", "description": "User can delete Notification"},
     
-        # {"name": "Create Booking", "code": "create_booking", "module_name": "Booking", "description": "User can create Booking"},
-    # {"name": "Read Booking", "code": "read_booking", "module_name": "Booking", "description": "User can read Booking"},
-    # {"name": "Update Booking", "code": "update_booking", "module_name": "Booking", "description": "User can update Booking"},
-    # {"name": "Delete Booking", "code": "delete_booking", "module_name": "Booking", "description": "User can delete Booking"},
-
-    # {"name": "Create Images", "code": "create_images", "module_name": "Images", "description": "User can create Images"},
-    # {"name": "Read Images", "code": "read_images", "module_name": "Images", "description": "User can read Images"},
-    # {"name": "Update Images", "code": "update_images", "module_name": "Images", "description": "User can update Images"},
-    # {"name": "Delete Images", "code": "delete_images", "module_name": "Images", "description": "User can delete Images"},
+        
 ]
 
 
