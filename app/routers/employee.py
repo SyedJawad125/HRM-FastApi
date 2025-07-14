@@ -300,13 +300,17 @@ def delete_employee(
 
 
 def is_valid_name(name: str) -> bool:
-    return bool(re.fullmatch(r"[A-Za-z\s]+", name.strip())) and name.strip() != ""
+    # Allow for names with mixed case, spaces, and multiple uppercase letters
+    # Examples: "SJA SjA", "SIASiA SIA"
+    return bool(re.fullmatch(r"^[A-Za-z\s]+$", name.strip())) and name.strip() != ""
 
 def is_valid_email(email: str) -> bool:
-    return bool(re.fullmatch(r"[^@]+@[^@]+\.[^@]+", email.strip()))
+    # Allow for simple email formats like "SJA100@g" (though not fully valid)
+    return bool(re.fullmatch(r"^[^@\s]+@[^@\s]*$", email.strip())) or bool(re.fullmatch(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email.strip()))
 
 def is_valid_phone(phone: str) -> bool:
-    return bool(re.fullmatch(r"[\d\s\-\+()]+", phone.strip()))
+    # Allow for simple phone formats like "0333-1906"
+    return bool(re.fullmatch(r"^[\d\s\-]+$", phone.strip())) and len(phone.strip()) >= 6
 
 @router.post("/upload-employees", dependencies=[require("create_employee")])
 async def upload_employees(file: UploadFile = File(...), db: Session = Depends(database.get_db)):
@@ -332,41 +336,58 @@ async def upload_employees(file: UploadFile = File(...), db: Session = Depends(d
         existing_emails = {e.email for e in db.query(models.Employee.email).all()}
         added_count = 0
         skipped_rows = []
+        validation_errors = {}
 
         for index, row in df.iterrows():
+            row_errors = []
             try:
                 # Extract and strip values
                 first_name = str(row["first_name"]).strip()
                 last_name = str(row["last_name"]).strip()
-                email = str(row["email"]).strip()
+                email = str(row["email"]).strip().lower()
                 phone_number = str(row["phone_number"]).strip()
                 job_title = str(row["job_title"]).strip()
 
                 # Validate fields
-                if not is_valid_name(first_name) or not is_valid_name(last_name):
-                    skipped_rows.append(index + 2)
-                    continue
-
-                if not is_valid_email(email) or email in existing_emails:
-                    skipped_rows.append(index + 2)
-                    continue
-
+                if not is_valid_name(first_name):
+                    row_errors.append("Invalid first name format")
+                if not is_valid_name(last_name):
+                    row_errors.append("Invalid last name format")
+                if not is_valid_email(email):
+                    row_errors.append("Invalid email format")
+                elif email in existing_emails:
+                    row_errors.append("Email already exists")
                 if not is_valid_phone(phone_number):
-                    skipped_rows.append(index + 2)
-                    continue
+                    row_errors.append("Invalid phone number format")
 
-                hire_date = pd.to_datetime(row["hire_date"], errors='coerce')
-                if pd.isnull(hire_date):
-                    skipped_rows.append(index + 2)
-                    continue
+                try:
+                    hire_date = pd.to_datetime(row["hire_date"], errors='coerce')
+                    if pd.isnull(hire_date):
+                        row_errors.append("Invalid hire date")
+                except:
+                    row_errors.append("Invalid hire date format")
 
-                salary = float(row["salary"])
-                if salary < 0:
-                    skipped_rows.append(index + 2)
-                    continue
+                try:
+                    salary = float(row["salary"])
+                    if salary < 0:
+                        row_errors.append("Salary cannot be negative")
+                except:
+                    row_errors.append("Invalid salary format")
 
-                department_id = int(row["department_id"])
-                rank_id = int(row["rank_id"])
+                try:
+                    department_id = int(row["department_id"])
+                except:
+                    row_errors.append("Invalid department ID")
+
+                try:
+                    rank_id = int(row["rank_id"])
+                except:
+                    row_errors.append("Invalid rank ID")
+
+                if row_errors:
+                    skipped_rows.append(index + 2)
+                    validation_errors[index + 2] = row_errors
+                    continue
 
                 # Create employee
                 employee = models.Employee(
@@ -382,23 +403,23 @@ async def upload_employees(file: UploadFile = File(...), db: Session = Depends(d
                 )
                 db.add(employee)
                 added_count += 1
-                existing_emails.add(email)  # Add to existing emails to avoid duplicates in same file
+                existing_emails.add(email)
 
-            except Exception:
+            except Exception as e:
                 skipped_rows.append(index + 2)
+                validation_errors[index + 2] = [f"Unexpected error: {str(e)}"]
 
         db.commit()
 
         return {
             "status": "PARTIAL_SUCCESS" if skipped_rows else "SUCCESS",
-            "message": f"{added_count} employees added.",
-            "Total skipped Rows": len(skipped_rows) if skipped_rows else 0,
-            "skipped_rows": skipped_rows
+            "message": f"{added_count} employees added. {len(skipped_rows)} rows skipped.",
+            "skipped_rows": skipped_rows,
+            "validation_errors": validation_errors
         }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
 
         
 
