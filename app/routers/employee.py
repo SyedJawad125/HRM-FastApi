@@ -41,6 +41,11 @@ import pandas as pd
 from app import models, database
 from app.dependencies.permission import require
 
+# router = APIRouter(
+#     prefix="/api/v1/employees",
+#     tags=['Employees v1']
+# )     , Url is,  http://127.0.0.1:8000/api/v1/employees
+
 router = APIRouter(
     prefix="/employees",
     tags=['Employees']
