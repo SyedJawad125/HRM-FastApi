@@ -7,6 +7,7 @@ from ..schemas import LoginRequest, Token
 from .. import database, models, utils, oauth2
 from fastapi.security import OAuth2PasswordRequestForm
 from ..database import get_db
+from fastapi.responses import JSONResponse
 
 
 from app import models, schemas, utils, oauth2, database
@@ -115,18 +116,15 @@ def login(user_credentials: schemas.LoginRequest, db: Session = Depends(database
     is_superuser_response = False
 
     if user.is_superuser and not user.role:
-        # Superuser with no role: grant all permissions
         for perm in all_permissions:
             permissions_dict[perm.code] = True
         is_superuser_response = True
 
     elif user.role:
-        # Role-based user (even if is_superuser in DB): only assign role permissions
         for perm in user.role.permissions:
             permissions_dict[perm.code] = True
 
     else:
-        # No role and not a superuser => invalid user setup
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User has no role assigned"
@@ -136,11 +134,11 @@ def login(user_credentials: schemas.LoginRequest, db: Session = Depends(database
     access_token = oauth2.create_access_token(data={"user_id": user.id})
     refresh_token = oauth2.create_refresh_token(data={"user_id": user.id})
 
-    # Step 6: Return full response
-    return {
+    # Step 6: Prepare response
+    response_data = {
         "message": "Successful",
         "access_token": access_token,
-        "refresh_token": refresh_token,  # Add refresh token to response
+        "refresh_token": refresh_token,
         "token_type": "bearer",
         "user_id": user.id,
         "username": user.username,
@@ -151,7 +149,10 @@ def login(user_credentials: schemas.LoginRequest, db: Session = Depends(database
         "permissions": permissions_dict
     }
 
-
+    # Step 7: Return response with status code
+    return JSONResponse(status_code=status.HTTP_200_OK, content=response_data)
+    
+    
 # For personal profile
 @router.get("/me", response_model=schemas.UserOut)
 def get_me(current_user: models.User = Depends(oauth2.get_current_user)):
