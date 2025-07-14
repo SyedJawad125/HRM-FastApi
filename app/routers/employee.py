@@ -34,6 +34,13 @@ from app.schemas.employee import Employee, EmployeeCreate
 from app.utils import (paginate_data, create_response, filter_employees,redis_client)
 from app.dependencies.permission import permission_required, require
 
+import re
+from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from sqlalchemy.orm import Session
+import pandas as pd
+from app import models, database
+from app.dependencies.permission import require
+
 router = APIRouter(
     prefix="/employees",
     tags=['Employees']
@@ -216,10 +223,94 @@ def delete_employee(
 
 
 
+# @router.post("/upload-employees", dependencies=[require("create_employee")])
+# async def upload_employees(file: UploadFile = File(...), db: Session = Depends(database.get_db)):
+#     try:
+#         # Read file
+#         filename = file.filename or ""
+#         if filename.endswith(".xlsx"):
+#             df = pd.read_excel(file.file)
+#         elif filename.endswith(".csv"):
+#             df = pd.read_csv(file.file)
+#         else:
+#             raise HTTPException(status_code=400, detail="Only .xlsx and .csv files are supported.")
+
+#         # Clean column names (remove spaces)
+#         df.columns = df.columns.str.strip()
+
+#         # Check required columns
+#         required_columns = {
+#             "first_name", "last_name", "email", "phone_number", 
+#             "hire_date", "job_title", "salary", "department_id", "rank_id"
+#         }
+#         if not required_columns.issubset(df.columns):
+#             missing = required_columns - set(df.columns)
+#             raise HTTPException(
+#                 status_code=400,
+#                 detail=f"Missing required columns: {missing}"
+#             )
+
+#         # Process data
+#         existing_emails = {e.email for e in db.query(models.Employee.email).all()}
+#         added_count = 0
+#         skipped_rows = []
+
+#         for index, row in df.iterrows():
+#             try:
+#                 # Check for duplicate email
+#                 if row["email"] in existing_emails:
+#                     skipped_rows.append(int(index) + 2)  # +2 for 1-based index + header
+#                     continue
+
+#                 # Validate hire_date
+#                 hire_date = pd.to_datetime(row["hire_date"], errors='coerce')
+#                 if pd.isnull(hire_date):
+#                     skipped_rows.append(int(index) + 2)
+#                     continue
+
+#                 # Create employee
+#                 employee = models.Employee(
+#                     first_name=str(row["first_name"]),
+#                     last_name=str(row["last_name"]),
+#                     email=str(row["email"]),
+#                     phone_number=str(row["phone_number"]),
+#                     hire_date=hire_date.date(),
+#                     job_title=str(row["job_title"]),
+#                     salary=float(row["salary"]),
+#                     department_id=int(row["department_id"]),
+#                     rank_id=int(row["rank_id"]),
+#                 )
+#                 db.add(employee)
+#                 added_count += 1
+
+#             except Exception as e:
+#                 skipped_rows.append(int(index) + 2)
+
+#         db.commit()
+
+#         return {
+#             "status": "PARTIAL_SUCCESS" if skipped_rows else "SUCCESS",
+#             "message": f"{added_count} employees added.",
+#             "skipped_rows": skipped_rows
+#         }
+
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+def is_valid_name(name: str) -> bool:
+    return bool(re.fullmatch(r"[A-Za-z\s]+", name.strip())) and name.strip() != ""
+
+def is_valid_email(email: str) -> bool:
+    return bool(re.fullmatch(r"[^@]+@[^@]+\.[^@]+", email.strip()))
+
+def is_valid_phone(phone: str) -> bool:
+    return bool(re.fullmatch(r"[\d\s\-\+()]+", phone.strip()))
+
 @router.post("/upload-employees", dependencies=[require("create_employee")])
 async def upload_employees(file: UploadFile = File(...), db: Session = Depends(database.get_db)):
     try:
-        # Read file
         filename = file.filename or ""
         if filename.endswith(".xlsx"):
             df = pd.read_excel(file.file)
@@ -228,62 +319,80 @@ async def upload_employees(file: UploadFile = File(...), db: Session = Depends(d
         else:
             raise HTTPException(status_code=400, detail="Only .xlsx and .csv files are supported.")
 
-        # Clean column names (remove spaces)
         df.columns = df.columns.str.strip()
 
-        # Check required columns
         required_columns = {
             "first_name", "last_name", "email", "phone_number", 
             "hire_date", "job_title", "salary", "department_id", "rank_id"
         }
         if not required_columns.issubset(df.columns):
             missing = required_columns - set(df.columns)
-            raise HTTPException(
-                status_code=400,
-                detail=f"Missing required columns: {missing}"
-            )
+            raise HTTPException(status_code=400, detail=f"Missing required columns: {missing}")
 
-        # Process data
         existing_emails = {e.email for e in db.query(models.Employee.email).all()}
         added_count = 0
         skipped_rows = []
 
         for index, row in df.iterrows():
             try:
-                # Check for duplicate email
-                if row["email"] in existing_emails:
-                    skipped_rows.append(int(index) + 2)  # +2 for 1-based index + header
+                # Extract and strip values
+                first_name = str(row["first_name"]).strip()
+                last_name = str(row["last_name"]).strip()
+                email = str(row["email"]).strip()
+                phone_number = str(row["phone_number"]).strip()
+                job_title = str(row["job_title"]).strip()
+
+                # Validate fields
+                if not is_valid_name(first_name) or not is_valid_name(last_name):
+                    skipped_rows.append(index + 2)
                     continue
 
-                # Validate hire_date
+                if not is_valid_email(email) or email in existing_emails:
+                    skipped_rows.append(index + 2)
+                    continue
+
+                if not is_valid_phone(phone_number):
+                    skipped_rows.append(index + 2)
+                    continue
+
                 hire_date = pd.to_datetime(row["hire_date"], errors='coerce')
                 if pd.isnull(hire_date):
-                    skipped_rows.append(int(index) + 2)
+                    skipped_rows.append(index + 2)
                     continue
+
+                salary = float(row["salary"])
+                if salary < 0:
+                    skipped_rows.append(index + 2)
+                    continue
+
+                department_id = int(row["department_id"])
+                rank_id = int(row["rank_id"])
 
                 # Create employee
                 employee = models.Employee(
-                    first_name=str(row["first_name"]),
-                    last_name=str(row["last_name"]),
-                    email=str(row["email"]),
-                    phone_number=str(row["phone_number"]),
+                    first_name=first_name,
+                    last_name=last_name,
+                    email=email,
+                    phone_number=phone_number,
                     hire_date=hire_date.date(),
-                    job_title=str(row["job_title"]),
-                    salary=float(row["salary"]),
-                    department_id=int(row["department_id"]),
-                    rank_id=int(row["rank_id"]),
+                    job_title=job_title,
+                    salary=salary,
+                    department_id=department_id,
+                    rank_id=rank_id,
                 )
                 db.add(employee)
                 added_count += 1
+                existing_emails.add(email)  # Add to existing emails to avoid duplicates in same file
 
-            except Exception as e:
-                skipped_rows.append(int(index) + 2)
+            except Exception:
+                skipped_rows.append(index + 2)
 
         db.commit()
 
         return {
             "status": "PARTIAL_SUCCESS" if skipped_rows else "SUCCESS",
             "message": f"{added_count} employees added.",
+            "Total skipped Rows": len(skipped_rows) if skipped_rows else 0,
             "skipped_rows": skipped_rows
         }
 
