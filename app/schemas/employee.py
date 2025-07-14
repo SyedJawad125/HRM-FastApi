@@ -11,7 +11,7 @@ class EmployeeBase(BaseModel):
     job_title: str
     salary: float
     department_id: int
-    rank_id: int  # Add this
+    rank_id: Optional[int] = None  # ✅ Allow rank_id to be nullable
 
 class EmployeeCreate(EmployeeBase):
    class Config:
