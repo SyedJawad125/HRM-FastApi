@@ -90,13 +90,13 @@ def get_timesheet(id: int, db: Session = Depends(database.get_db),
 @router.patch("/{id}", response_model=schemas.Timesheet)
 def patch_update_timesheet(
     id: int,
-    updated_timesheet: schemas.AttendanceUpdate,
+    updated_timesheet: schemas.TimesheetUpdate,
     db: Session = Depends(database.get_db),
     current_user: models.User = Depends(oauth2.get_current_user)
 ):
     try:
 
-        timesheet_instance = db.query(models.Attendance).filter(models.Attendance.id == id).first()
+        timesheet_instance = db.query(models.Timesheet).filter(models.Timesheet.id == id).first()
 
         if not timesheet_instance:
             raise HTTPException(
@@ -121,7 +121,6 @@ def patch_update_timesheet(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"An error occurred while patching the timesheet: {str(e)}"
         )
-
 
 # @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 
